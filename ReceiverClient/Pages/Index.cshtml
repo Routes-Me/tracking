@@ -1,0 +1,39 @@
+﻿@page
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<div class="container">
+    <input type="hidden" id="SubscribedFunction" />
+    <input type="hidden" id="SubscribedValue" />
+    <div class="row">
+        <h2>Institution</h2>
+    </div>
+    <div class="row">&nbsp;</div>
+    <div class="row">
+        <div class="col-2">VehicleId:</div>
+        <div class="col-4"><input type="text" id="VehicleId" /></div>
+        <div class="col-2">InstitutionId:</div>
+        <div class="col-4"><input type="text" id="InstitutionId" /></div>
+    </div>
+    <div class="row">&nbsp;</div>
+    <div class="row">
+        <div class="col-6">
+            <input type="button" id="SubscribeInstitutions" value="Subscribe Vehicle For Institution" /></ br>
+            <input type="button" id="SubscribeVehicles" value="Subscribe Vehicle" /></ br>
+            <input type="button" id="Unsubscribe" value="Unsubscribe" /></ br>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-12">
+        <hr />
+    </div>
+</div>
+<div class="row">
+    <div class="col-6">
+        <ul id="messagesList"></ul>
+    </div>
+</div>
+<script src="~/js/signalr/dist/browser/signalr.js"></script>
+<script src="~/js/InstitutionScreen.js"></script>

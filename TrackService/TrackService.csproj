@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <StartupObject>TrackService.Program</StartupObject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Helper\ThreadStatsChangefeedDbService.cs" />
+    <Compile Remove="IServices\ITrackInformationService.cs" />
+    <Compile Remove="TrackInformationService.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Cronos" Version="0.7.0" />
+    <PackageReference Include="Lib.AspNetCore.ServerSentEvents" Version="5.0.0" />
+    <PackageReference Include="Microsoft.AspNet.WebApi.Client" Version="5.2.7" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="3.1.5" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Core" Version="1.1.0" />
+    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="3.1.3" />
+    <PackageReference Include="RethinkDb.Driver" Version="2.3.150" />
+    <PackageReference Include="RethinkDb.Driver.Linq" Version="2.3.150" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TrackService.RethinkDb_Abstractions\TrackService.RethinkDb_Abstractions.csproj" />
+    <ProjectReference Include="..\TrackService.RethinkDb_Changefeed\TrackService.RethinkDb_Changefeed.csproj" />
+  </ItemGroup>
+
+
+</Project>
