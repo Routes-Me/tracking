@@ -1,0 +1,8 @@
+version: '3.4'
+
+services:
+  trackservice:
+    image: ${DOCKER_REGISTRY-}trackservice
+    build:
+      context: .
+      dockerfile: TrackService/Dockerfile
