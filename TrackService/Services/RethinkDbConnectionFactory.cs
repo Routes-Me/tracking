@@ -1,12 +1,7 @@
 ﻿using Microsoft.Extensions.Options;
 using RethinkDb.Driver;
 using RethinkDb.Driver.Net;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using TrackService.IServices;
-using TrackService.Models;
 using TrackService.RethinkDb_Changefeed.Model;
 
 namespace TrackService

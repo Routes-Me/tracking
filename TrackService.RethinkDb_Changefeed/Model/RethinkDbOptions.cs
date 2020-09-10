@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace TrackService.RethinkDb_Changefeed.Model
+﻿namespace TrackService.RethinkDb_Changefeed.Model
 {
     public class RethinkDbOptions
     {

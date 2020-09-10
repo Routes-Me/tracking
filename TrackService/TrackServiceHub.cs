@@ -1,13 +1,9 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR.Client;
 using TrackService.Helper;
 using TrackService.RethinkDb_Abstractions;
-using Microsoft.AspNetCore.Mvc.Formatters;
-using Microsoft.CodeAnalysis;
 using TrackService.Helper.ConnectionMapping;
 using TrackService.Models;
 

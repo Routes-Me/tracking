@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using TrackService.RethinkDb_Abstractions;
+﻿using Microsoft.AspNetCore.Mvc;
 
 namespace TrackService.Controllers
 {

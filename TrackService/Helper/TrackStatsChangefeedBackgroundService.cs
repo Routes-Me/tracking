@@ -1,13 +1,8 @@
-﻿using Lib.AspNetCore.ServerSentEvents;
-using Microsoft.AspNetCore.SignalR;
+﻿using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Hosting;
-using RethinkDb.Driver.Net;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using TrackService.IServices;
 using TrackService.RethinkDb_Abstractions;
 
 namespace TrackService.Helper

@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
 using VehicleData = TrackService.RethinkDb_Abstractions.VehicleDetails;
 
 namespace TrackService.RethinkDb_Abstractions

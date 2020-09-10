@@ -1,16 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using TrackService.Helper;
-using TrackService.Models;
 using TrackService.RethinkDb_Abstractions;
 using IdleModel = TrackService.RethinkDb_Abstractions.IdleModel;
 using VehicleDetails = TrackService.RethinkDb_Abstractions.VehicleDetails;
-
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace TrackService.Controllers
 {

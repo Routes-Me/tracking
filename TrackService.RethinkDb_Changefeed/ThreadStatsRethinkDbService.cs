@@ -11,7 +11,6 @@ using RethinkDb.Driver.Ast;
 using RethinkDb.Driver.Net;
 using TrackService.RethinkDb_Abstractions;
 using Nancy.Json;
-using RethinkDb.Driver;
 using System.Net;
 
 namespace TrackService.RethinkDb_Changefeed

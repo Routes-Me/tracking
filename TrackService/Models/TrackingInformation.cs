@@ -1,8 +1,5 @@
-
 using Newtonsoft.Json;
-using RethinkDb.Driver.Ast;
 using System;
-using System.Collections.Generic;
 
 namespace TrackService.Models
 {

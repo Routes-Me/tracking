@@ -1,8 +1,6 @@
 ﻿using Cronos;
 using Microsoft.Extensions.Hosting;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -31,7 +29,7 @@ namespace TrackService.Helper.CronJobServices.CronJobExtensionMethods
             if (next.HasValue)
             {
                 var delay = next.Value - DateTimeOffset.Now;
-                _timer = new System.Timers.Timer(delay.TotalMilliseconds);
+                _timer = new System.Timers.Timer(delay.TotalMinutes);
                 _timer.Elapsed += async (sender, args) =>
                 {
                     _timer.Dispose();  // reset and dispose timer

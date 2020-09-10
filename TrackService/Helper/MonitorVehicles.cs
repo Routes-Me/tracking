@@ -1,12 +1,7 @@
-﻿using Microsoft.AspNetCore.Server.Kestrel.Core.Features;
-using Microsoft.Extensions.Hosting;
+﻿using Microsoft.Extensions.Hosting;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using TrackService.Models;
 using TrackService.RethinkDb_Abstractions;
 
 namespace TrackService.Helper

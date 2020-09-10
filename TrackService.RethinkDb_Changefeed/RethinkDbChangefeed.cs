@@ -1,5 +1,4 @@
 ﻿using System.Threading;
-using System.Threading.Tasks;
 using RethinkDb.Driver.Net;
 using RethinkDb.Driver.Model;
 using System.Collections.Generic;
