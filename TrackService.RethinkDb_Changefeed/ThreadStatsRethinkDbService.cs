@@ -18,7 +18,7 @@ namespace TrackService.RethinkDb_Changefeed
     public class ThreadStatsRethinkDbService : ICoordinateChangeFeedbackBackgroundService
     {
         private const string DATABASE_NAME = "trackingdb";
-        private const string VEHICLE_TABLE_NAME = "vehicles";
+        private const string MOBILE_TABLE_NAME = "mobiles";
         private const string CORDINATE_TABLE_NAME = "coordinates";
 
         public static bool IsAnotherServiceWorking = false;
@@ -45,9 +45,9 @@ namespace TrackService.RethinkDb_Changefeed
             }
 
             var database = _rethinkDbSingleton.Db(DATABASE_NAME);
-            if (!((string[])database.TableList().Run(_rethinkDbConnection).ToObject<string[]>()).Contains(VEHICLE_TABLE_NAME))
+            if (!((string[])database.TableList().Run(_rethinkDbConnection).ToObject<string[]>()).Contains(MOBILE_TABLE_NAME))
             {
-                database.TableCreate(VEHICLE_TABLE_NAME).Run(_rethinkDbConnection);
+                database.TableCreate(MOBILE_TABLE_NAME).Run(_rethinkDbConnection);
             }
 
             if (!((string[])database.TableList().Run(_rethinkDbConnection).ToObject<string[]>()).Contains(CORDINATE_TABLE_NAME))
@@ -65,12 +65,12 @@ namespace TrackService.RethinkDb_Changefeed
             ReqlFunction1 filter = expr => expr["vehicleId"].Eq(Convert.ToInt32(trackingStats.mobileId));
             string filterSerialized = ReqlRaw.ToRawString(filter);
             var filterExpr = ReqlRaw.FromRawString(filterSerialized);
-            Cursor<object> vehicle = _rethinkDbSingleton.Db(DATABASE_NAME).Table(VEHICLE_TABLE_NAME).Filter(filterExpr).Run(_rethinkDbConnection);
+            Cursor<object> vehicle = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExpr).Run(_rethinkDbConnection);
             if (vehicle.BufferedSize > 0)
             {
                 MobileJSONResponse response = JsonConvert.DeserializeObject<MobileJSONResponse>(vehicle.BufferedItems[0].ToString());
 
-                _rethinkDbSingleton.Db(DATABASE_NAME).Table(VEHICLE_TABLE_NAME)
+                _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME)
                         .Filter(new { id = response.id })
                         .Update(new { timeStamp = dtDateTime, isLive = true }).Run(_rethinkDbConnection);
 
@@ -97,7 +97,7 @@ namespace TrackService.RethinkDb_Changefeed
 
         public VehicleResponse GetAllVehicleByInstitutionId(IdleModel model)
         {
-            var keys = _rethinkDbSingleton.Db(DATABASE_NAME).Table(VEHICLE_TABLE_NAME).Run(_rethinkDbConnection);
+            var keys = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Run(_rethinkDbConnection);
             DateTime startDate;
             DateTime endDate;
             string filterSerializedForLive = string.Empty;
@@ -108,7 +108,7 @@ namespace TrackService.RethinkDb_Changefeed
             string filterSerializedForinstitutionId = ReqlRaw.ToRawString(filterForinstitutionId);
             var filterExprForinstitutionId = ReqlRaw.FromRawString(filterSerializedForinstitutionId);
 
-            Cursor<object> InstitutionData = _rethinkDbSingleton.Db(DATABASE_NAME).Table(VEHICLE_TABLE_NAME).Filter(filterExprForinstitutionId).Run(_rethinkDbConnection);
+            Cursor<object> InstitutionData = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Run(_rethinkDbConnection);
             if (InstitutionData.BufferedSize == 0)
             {
                 oVehicleResponse.Status = false;
@@ -140,11 +140,11 @@ namespace TrackService.RethinkDb_Changefeed
                 string filterSerializedForEndDate = ReqlRaw.ToRawString(filterForEndDate);
                 var filterExprForEndDate = ReqlRaw.FromRawString(filterSerializedForEndDate);
 
-                vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(VEHICLE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterExprForLive).Filter(filterForStartDate).Filter(filterForEndDate).Run(_rethinkDbConnection);
+                vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterExprForLive).Filter(filterForStartDate).Filter(filterForEndDate).Run(_rethinkDbConnection);
             }
             else
             {
-                vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(VEHICLE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterExprForLive).Run(_rethinkDbConnection);
+                vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterExprForLive).Run(_rethinkDbConnection);
             }
 
             List<VehicleDetails> listVehicles = new List<VehicleDetails>();
@@ -242,7 +242,7 @@ namespace TrackService.RethinkDb_Changefeed
 
         public VehicleResponse GetAllVehicleDetail(IdleModel model)
         {
-            var keys = _rethinkDbSingleton.Db(DATABASE_NAME).Table(VEHICLE_TABLE_NAME).Run(_rethinkDbConnection);
+            var keys = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Run(_rethinkDbConnection);
             DateTime startDate;
             DateTime endDate;
             Cursor<object> vehicles;
@@ -271,11 +271,11 @@ namespace TrackService.RethinkDb_Changefeed
                 string filterSerializedForEndDate = ReqlRaw.ToRawString(filterForEndDate);
                 var filterExprForEndDate = ReqlRaw.FromRawString(filterSerializedForEndDate);
 
-                vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(VEHICLE_TABLE_NAME).Filter(filterExpr).Filter(filterForStartDate).Filter(filterForEndDate).Run(_rethinkDbConnection);
+                vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExpr).Filter(filterForStartDate).Filter(filterForEndDate).Run(_rethinkDbConnection);
             }
             else
             {
-                vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(VEHICLE_TABLE_NAME).Filter(filterExpr).Run(_rethinkDbConnection);
+                vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExpr).Run(_rethinkDbConnection);
             }
 
 
@@ -372,7 +372,7 @@ namespace TrackService.RethinkDb_Changefeed
 
         public string GetInstitutionId(string mobileId)
         {
-            var vehicle = _rethinkDbSingleton.Db(DATABASE_NAME).Table(VEHICLE_TABLE_NAME).Get(mobileId).Run(_rethinkDbConnection);
+            var vehicle = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Get(mobileId).Run(_rethinkDbConnection);
             string institutionId = string.Empty;
 
             foreach (var elements in vehicle)
@@ -390,7 +390,7 @@ namespace TrackService.RethinkDb_Changefeed
             ReqlFunction1 filter = expr => expr["vehicleId"].Eq(Convert.ToInt32(vehicleId));
             string filterSerialized = ReqlRaw.ToRawString(filter);
             var filterExpr = ReqlRaw.FromRawString(filterSerialized);
-            Cursor<object> vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(VEHICLE_TABLE_NAME).Filter(filterExpr).Run(_rethinkDbConnection);
+            Cursor<object> vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExpr).Run(_rethinkDbConnection);
             if (vehicles.Count() > 0)
                 return true;
             else
@@ -402,7 +402,7 @@ namespace TrackService.RethinkDb_Changefeed
             ReqlFunction1 filter = expr => expr["institutionId"].Eq(Convert.ToInt32(institutionId));
             string filterSerialized = ReqlRaw.ToRawString(filter);
             var filterExpr = ReqlRaw.FromRawString(filterSerialized);
-            Cursor<object> institutions = _rethinkDbSingleton.Db(DATABASE_NAME).Table(VEHICLE_TABLE_NAME).Filter(filterExpr).Run(_rethinkDbConnection);
+            Cursor<object> institutions = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExpr).Run(_rethinkDbConnection);
             if (institutions.Count() > 0)
                 return true;
             else
@@ -415,7 +415,7 @@ namespace TrackService.RethinkDb_Changefeed
             ReqlFunction1 filter = expr => expr["timeStamp"].Le(DateTime.UtcNow.AddMinutes(-10));
             string filterSerialized = ReqlRaw.ToRawString(filter);
             var filterExpr = ReqlRaw.FromRawString(filterSerialized);
-            Cursor<object> vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(VEHICLE_TABLE_NAME).Filter(filterExpr).Run(_rethinkDbConnection);
+            Cursor<object> vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExpr).Run(_rethinkDbConnection);
 
             if (vehicles.BufferedSize > 0)
             {
@@ -423,7 +423,7 @@ namespace TrackService.RethinkDb_Changefeed
                 {
                     MobileJSONResponse response = JsonConvert.DeserializeObject<MobileJSONResponse>(vehicle.ToString());
 
-                    _rethinkDbSingleton.Db(DATABASE_NAME).Table(VEHICLE_TABLE_NAME)
+                    _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME)
                             .Filter(new { id = response.id })
                             .Update(new { isLive = false }).Run(_rethinkDbConnection);
                 }
@@ -435,13 +435,13 @@ namespace TrackService.RethinkDb_Changefeed
             ReqlFunction1 filter = expr => expr["vehicleId"].Eq(Convert.ToInt32(vehicleId));
             string filterSerialized = ReqlRaw.ToRawString(filter);
             var filterExpr = ReqlRaw.FromRawString(filterSerialized);
-            Cursor<object> vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(VEHICLE_TABLE_NAME).Filter(filterExpr).Run(_rethinkDbConnection);
+            Cursor<object> vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExpr).Run(_rethinkDbConnection);
 
             foreach (var vehicle in vehicles)
             {
                 var id = JObject.Parse(vehicle.ToString()).Children().Values().LastOrDefault().ToString();
 
-                _rethinkDbSingleton.Db(DATABASE_NAME).Table(VEHICLE_TABLE_NAME)
+                _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME)
                         .Filter(new { id = id })
                         .Update(new { isLive = false }).Run(_rethinkDbConnection);
             }
@@ -498,7 +498,7 @@ namespace TrackService.RethinkDb_Changefeed
                         }
                         else if (((Newtonsoft.Json.Linq.JProperty)value).Name.ToString() == "mobileId")
                         {
-                            var vehicle = _rethinkDbSingleton.Db(DATABASE_NAME).Table(VEHICLE_TABLE_NAME).Get(((Newtonsoft.Json.Linq.JProperty)value).Value.ToString()).Run(_rethinkDbConnection);
+                            var vehicle = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Get(((Newtonsoft.Json.Linq.JProperty)value).Value.ToString()).Run(_rethinkDbConnection);
                             foreach (var elements in vehicle)
                             {
                                 if (((Newtonsoft.Json.Linq.JProperty)elements).Name == "vehicleId")
@@ -546,8 +546,8 @@ namespace TrackService.RethinkDb_Changefeed
             ReqlFunction1 filter = expr => expr["timeStamp"].Ge(DateTime.UtcNow.AddDays(-7));
             string filterSerialized = ReqlRaw.ToRawString(filter);
             var filterExpr = ReqlRaw.FromRawString(filterSerialized);
-            Cursor<object> vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(VEHICLE_TABLE_NAME).Filter(filterExpr).Run(_rethinkDbConnection);
-            _rethinkDbSingleton.Db(DATABASE_NAME).Table(VEHICLE_TABLE_NAME).Filter(filterExpr).Delete().Run(_rethinkDbConnection);
+            Cursor<object> vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExpr).Run(_rethinkDbConnection);
+            _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExpr).Delete().Run(_rethinkDbConnection);
         }
 
         public Task InsertMobiles(MobilesModel model)
@@ -555,10 +555,10 @@ namespace TrackService.RethinkDb_Changefeed
             ReqlFunction1 filter = expr => expr["vehicleId"].Eq(model.vehicleId);
             string filterSerialized = ReqlRaw.ToRawString(filter);
             var filterExpr = ReqlRaw.FromRawString(filterSerialized);
-            Cursor<object> vehicle = _rethinkDbSingleton.Db(DATABASE_NAME).Table(VEHICLE_TABLE_NAME).Filter(filterExpr).Run(_rethinkDbConnection);
+            Cursor<object> vehicle = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExpr).Run(_rethinkDbConnection);
             if (vehicle.BufferedSize == 0)
             {
-                _rethinkDbSingleton.Db(DATABASE_NAME).Table(VEHICLE_TABLE_NAME).Insert(new Mobiles
+                _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Insert(new Mobiles
                 {
                     institutionId = model.institutionId,
                     vehicleId = model.vehicleId,
@@ -572,7 +572,7 @@ namespace TrackService.RethinkDb_Changefeed
 
         public string GetVehicleId(string mobileId)
         {
-            var vehicle = _rethinkDbSingleton.Db(DATABASE_NAME).Table(VEHICLE_TABLE_NAME).Get(mobileId).Run(_rethinkDbConnection);
+            var vehicle = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Get(mobileId).Run(_rethinkDbConnection);
             string vehicleId = string.Empty;
 
             foreach (var elements in vehicle)
