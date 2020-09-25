@@ -12,6 +12,8 @@ using RethinkDb.Driver.Net;
 using TrackService.RethinkDb_Abstractions;
 using Nancy.Json;
 using System.Net;
+using TrackService.RethinkDb_Changefeed.Model.Common;
+using Microsoft.Extensions.Options;
 
 namespace TrackService.RethinkDb_Changefeed
 {
@@ -26,7 +28,10 @@ namespace TrackService.RethinkDb_Changefeed
         private readonly RethinkDb.Driver.RethinkDB _rethinkDbSingleton;
         private readonly Connection _rethinkDbConnection;
 
-        public ThreadStatsRethinkDbService(IRethinkDbSingletonProvider rethinkDbSingletonProvider)
+        private readonly AppSettings _appSettings;
+        private readonly Dependencies _dependencies;
+
+        public ThreadStatsRethinkDbService(IRethinkDbSingletonProvider rethinkDbSingletonProvider, IOptions<AppSettings> appSettings, IOptions<Dependencies> dependencies)
         {
             if (rethinkDbSingletonProvider == null)
             {
@@ -35,6 +40,8 @@ namespace TrackService.RethinkDb_Changefeed
 
             _rethinkDbSingleton = rethinkDbSingletonProvider.RethinkDbSingleton;
             _rethinkDbConnection = rethinkDbSingletonProvider.RethinkDbConnection;
+            _appSettings = appSettings.Value;
+            _dependencies = dependencies.Value;
         }
 
         public Task EnsureDatabaseCreated()
@@ -525,7 +532,7 @@ namespace TrackService.RethinkDb_Changefeed
                 {
                     using (var client = new HttpClient())
                     {
-                        client.BaseAddress = new Uri("http://localhost:56708/api/");
+                        client.BaseAddress = new Uri(_appSettings.Host + _dependencies.ArchiveTrackServiceUrl);
                         var res = client.PostAsync("feeds", new StringContent(new JavaScriptSerializer().Serialize(archiveCoordinates), Encoding.UTF8, "application/json")).Result;
 
                         if (res.StatusCode == HttpStatusCode.Created)
