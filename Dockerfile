@@ -1,12 +1,11 @@
-#See https://aka.ms/containerfastmode to understand how Visual Studio uses this Dockerfile to build your images for faster debugging.
-
-FROM mcr.microsoft.com/dotnet/core/aspnet:3.1-buster-slim AS base
+FROM mcr.microsoft.com/dotnet/core/aspnet:3.1 AS base
 WORKDIR /app
 EXPOSE 80
+EXPOSE 443
 
-FROM mcr.microsoft.com/dotnet/core/sdk:3.1-buster AS build
+FROM mcr.microsoft.com/dotnet/core/sdk:3.1 AS build
 WORKDIR /src
-COPY ["TrackService.csproj", "TrackService/"]
+COPY ["TrackService/TrackService.csproj", "TrackService/"]
 COPY ["TrackService.RethinkDb_Abstractions/TrackService.RethinkDb_Abstractions.csproj", "TrackService.RethinkDb_Abstractions/"]
 COPY ["TrackService.RethinkDb_Changefeed/TrackService.RethinkDb_Changefeed.csproj", "TrackService.RethinkDb_Changefeed/"]
 RUN dotnet restore "TrackService/TrackService.csproj"
