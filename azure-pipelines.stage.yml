@@ -13,7 +13,7 @@ variables:
   dockerRegistryServiceConnection: 'ff272ebd-d476-4045-a2ea-37881ae8c6f7'
   imageRepository: 'livetrackingservice'
   containerRegistry: 'stagenoruaebscontainerregistry.azurecr.io'
-  dockerfilePath: '$(Build.SourcesDirectory)/docker-compose.stage.yml'
+  dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile.stage'
   tag: '$(Build.BuildId)'
   
   # Agent VM image name
@@ -33,7 +33,7 @@ stages:
       inputs:
         command: buildAndPush
         repository: $(imageRepository)
-        dockerComposeFile: $(dockerfilePath)
+        dockerfile: $(dockerfilePath)
         containerRegistry: $(dockerRegistryServiceConnection)
         tags: |
           $(tag)
