@@ -31,7 +31,7 @@ namespace TrackService
             #region RethinkDB
             services.AddRethinkDb(options =>
             {
-                options.Host = "172.17.0.2";
+                options.Host = "172.17.0.6";
             });
             #endregion
             services.AddServerSentEvents();
