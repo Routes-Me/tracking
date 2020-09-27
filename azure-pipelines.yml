@@ -13,7 +13,7 @@ variables:
   dockerRegistryServiceConnection: '88ec61cc-de9c-4422-a3e2-0c133aa0605f'
   imageRepository: 'livetrackingservice'
   containerRegistry: 'noruaebscontainerregistry.azurecr.io'
-  dockerfilePath: '$(Build.SourcesDirectory)/TrackService/Dockerfile'
+  dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile'
   tag: '$(Build.BuildId)'
   
   # Agent VM image name
