@@ -8,13 +8,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    ports:
-      - "86:80"
+    # ports:
+    #   - "86:80"
     environment:
       - ASPNETCORE_ENVIRONMENT=Staging
-      - ASPNETCORE_URLS=http://+:80
     # volumes:
     #   - ~/.vsdbg:/remote_debugger:rw
-    deploy:
-      restart_policy:
-        condition: always
+    # deploy:
+    #   restart_policy:
+    #     condition: always
