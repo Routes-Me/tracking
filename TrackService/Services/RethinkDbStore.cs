@@ -22,11 +22,11 @@ namespace TrackService.Services
             CreateDb(_dbName);
 
             // tables
-            CreateTable(_dbName, nameof(vehicles));
+            CreateTable(_dbName, nameof(mobiles));
             CreateTable(_dbName, nameof(coordinates));
 
             // indexes
-            CreateIndex(_dbName, nameof(vehicles), nameof(vehicles.vehicleId));
+            CreateIndex(_dbName, nameof(mobiles), nameof(mobiles.vehicleId));
             CreateIndex(_dbName, nameof(coordinates), nameof(coordinates.mobileId));
         }
 

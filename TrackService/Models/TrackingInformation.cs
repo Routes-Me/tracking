@@ -3,7 +3,7 @@ using System;
 
 namespace TrackService.Models
 {
-    public class vehicles
+    public class mobiles
     {
         [JsonProperty("id", NullValueHandling = NullValueHandling.Ignore)]
         public int vehicleId { get; set; }

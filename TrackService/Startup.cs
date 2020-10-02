@@ -32,24 +32,25 @@ namespace TrackService
             services.AddRethinkDb(options =>
             {
                 options.Host = "172.17.0.2";
+                //options.Host = "localhost";
             });
             #endregion
             services.AddServerSentEvents();
             services.AddThreadStats();
 
-            services.AddCronJob<SyncCoordinates>(c =>
-            {
-                c.TimeZoneInfo = TimeZoneInfo.Local;
-                c.CronExpression = @"0 1 */1 * * "; 
-                //c.CronExpression = @"*/1 * * * * "; 
-            });
+            //services.AddCronJob<SyncCoordinates>(c =>
+            //{
+            //    c.TimeZoneInfo = TimeZoneInfo.Local;
+            //    c.CronExpression = @"0 1 */1 * * ";
+            //    //c.CronExpression = @"* * */1 * * ";
+            //});
 
-            services.AddCronJob<SyncVehicles>(c =>
-            {
-                c.TimeZoneInfo = TimeZoneInfo.Local;
-                //c.CronExpression = @"4 13 * * * "; 
-                c.CronExpression = @"0 2 */7 * * "; // Run every 7 days at 2 AM
-            });
+            //services.AddCronJob<SyncVehicles>(c =>
+            //{
+            //    c.TimeZoneInfo = TimeZoneInfo.Local;
+            //    //c.CronExpression = @"4 13 * * * "; 
+            //    c.CronExpression = @"0 2 */7 * * "; // Run every 7 days at 2 AM
+            //});
 
             services.AddSignalR(hubOptions =>
             {
@@ -57,7 +58,6 @@ namespace TrackService
                 hubOptions.KeepAliveInterval = TimeSpan.FromSeconds(15);
                 hubOptions.ClientTimeoutInterval = TimeSpan.FromSeconds(30);
             });
-
             var appSettingsSection = Configuration.GetSection("AppSettings");
             services.Configure<AppSettings>(appSettingsSection);
 

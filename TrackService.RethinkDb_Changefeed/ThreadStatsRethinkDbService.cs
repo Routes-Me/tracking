@@ -69,10 +69,8 @@ namespace TrackService.RethinkDb_Changefeed
         {
             DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
             dtDateTime = dtDateTime.AddSeconds(Convert.ToDouble(trackingStats.timeStamp)).ToLocalTime();
-            ReqlFunction1 filter = expr => expr["vehicleId"].Eq(Convert.ToInt32(trackingStats.mobileId));
-            string filterSerialized = ReqlRaw.ToRawString(filter);
-            var filterExpr = ReqlRaw.FromRawString(filterSerialized);
-            Cursor<object> vehicle = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExpr).Run(_rethinkDbConnection);
+            var vehicleId = Convert.ToInt32(trackingStats.mobileId);
+            Cursor<object> vehicle = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(new { vehicleId = vehicleId }).Run(_rethinkDbConnection);
             if (vehicle.BufferedSize > 0)
             {
                 MobileJSONResponse response = JsonConvert.DeserializeObject<MobileJSONResponse>(vehicle.BufferedItems[0].ToString());
@@ -110,7 +108,7 @@ namespace TrackService.RethinkDb_Changefeed
             string filterSerializedForLive = string.Empty;
             Cursor<object> vehicles;
             VehicleResponse oVehicleResponse = new VehicleResponse();
-            
+
             ReqlFunction1 filterForinstitutionId = expr => expr["institutionId"].Eq(Convert.ToInt32(model.institutionId));
             string filterSerializedForinstitutionId = ReqlRaw.ToRawString(filterForinstitutionId);
             var filterExprForinstitutionId = ReqlRaw.FromRawString(filterSerializedForinstitutionId);
@@ -170,7 +168,7 @@ namespace TrackService.RethinkDb_Changefeed
                         string cordinatefilterSerialized = ReqlRaw.ToRawString(cordinatefilter);
                         var cordinatefilterExpr = ReqlRaw.FromRawString(cordinatefilterSerialized);
                         Cursor<object> coordinates = _rethinkDbSingleton.Db(DATABASE_NAME).Table(CORDINATE_TABLE_NAME).Filter(cordinatefilterExpr).Run(_rethinkDbConnection);
-                        
+
                         foreach (var coordinate in coordinates)
                         {
                             string latitude = string.Empty, longitude = string.Empty, timeStamp = string.Empty;
@@ -559,19 +557,23 @@ namespace TrackService.RethinkDb_Changefeed
 
         public Task InsertMobiles(MobilesModel model)
         {
-            ReqlFunction1 filter = expr => expr["vehicleId"].Eq(model.vehicleId);
-            string filterSerialized = ReqlRaw.ToRawString(filter);
-            var filterExpr = ReqlRaw.FromRawString(filterSerialized);
-            Cursor<object> vehicle = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExpr).Run(_rethinkDbConnection);
+            Cursor<object> vehicle = null;
+            Task.Run(() =>
+            {
+                vehicle = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(new { vehicleId = model.vehicleId }).Run(_rethinkDbConnection);
+            }).Wait();
             if (vehicle.BufferedSize == 0)
             {
-                _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Insert(new Mobiles
+                Task.Run(() =>
                 {
-                    institutionId = model.institutionId,
-                    vehicleId = model.vehicleId,
-                    isLive = true,
-                    timeStamp = DateTime.UtcNow
-                }).Run(_rethinkDbConnection);
+                    _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Insert(new Mobiles
+                    {
+                        institutionId = model.institutionId,
+                        vehicleId = model.vehicleId,
+                        isLive = true,
+                        timeStamp = DateTime.UtcNow
+                    }).Run(_rethinkDbConnection);
+                }).Wait();
             }
 
             return Task.CompletedTask;

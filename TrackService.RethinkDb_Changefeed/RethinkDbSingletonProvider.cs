@@ -26,7 +26,7 @@ namespace TrackService.RethinkDb_Changefeed
 
             var rethinkDbSingleton = RethinkDb.Driver.RethinkDB.R;
 
-            var rethinkDbConnection = rethinkDbSingleton.Connection().Hostname(options.Value.Host);
+            var rethinkDbConnection = rethinkDbSingleton.Connection().Hostname(options.Value.Host).Db(options.Value.Database);
 
             if (string.IsNullOrEmpty(Convert.ToString(options.Value.Port)))
             {
