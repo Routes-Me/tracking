@@ -3,17 +3,17 @@
 # https://docs.microsoft.com/azure/devops/pipelines/languages/docker
 
 trigger:
-- master
+- development
 
 resources:
 - repo: self
 
 variables:
   # Container registry service connection established during pipeline creation
-  dockerRegistryServiceConnection: '88ec61cc-de9c-4422-a3e2-0c133aa0605f'
+  dockerRegistryServiceConnection: 'ff272ebd-d476-4045-a2ea-37881ae8c6f7'
   imageRepository: 'livetrackingservice'
-  containerRegistry: 'noruaebscontainerregistry.azurecr.io'
-  dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile'
+  containerRegistry: 'stagenoruaebscontainerregistry.azurecr.io'
+  dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile.stage'
   tag: '$(Build.BuildId)'
   
   # Agent VM image name

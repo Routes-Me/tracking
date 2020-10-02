@@ -29,10 +29,10 @@ namespace TrackService
         {
             services.AddControllers();
             #region RethinkDB
+            Console.WriteLine(Configuration.GetSection("RethinkDbDev").GetValue<String>("Host"));
             services.AddRethinkDb(options =>
             {
-                options.Host = "172.17.0.2";
-                //options.Host = "localhost";
+                options.Host = Configuration.GetSection("RethinkDbDev").GetValue<String>("Host"); // "172.17.0.6";
             });
             #endregion
             services.AddServerSentEvents();
@@ -55,8 +55,8 @@ namespace TrackService
             services.AddSignalR(hubOptions =>
             {
                 hubOptions.MaximumReceiveMessageSize = 1024;  // bytes
-                hubOptions.KeepAliveInterval = TimeSpan.FromSeconds(15);
-                hubOptions.ClientTimeoutInterval = TimeSpan.FromSeconds(30);
+                hubOptions.KeepAliveInterval = TimeSpan.FromMinutes(15);
+                hubOptions.ClientTimeoutInterval = TimeSpan.FromMinutes(30);
             });
             var appSettingsSection = Configuration.GetSection("AppSettings");
             services.Configure<AppSettings>(appSettingsSection);
