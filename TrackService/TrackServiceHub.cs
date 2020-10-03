@@ -31,31 +31,31 @@ namespace TrackService
             _coordinateChangeFeedbackBackgroundService = coordinateChangeFeedbackBackgroundService;
         }
 
-        public async void SendLocation(LocationFeed sendLocations)
+        public async void SendLocation(string locations)
         {
-            foreach (var location in sendLocations.SendLocation)
+            try
             {
-                try
+                LocationFeed feeds = Newtonsoft.Json.JsonConvert.DeserializeObject<LocationFeed>(locations);
+                foreach (var location in feeds.SendLocation)
                 {
                     await _coordinateChangeFeedbackBackgroundService.InsertCordinates(new CordinatesModel
                     {
                         mobileId = _vehiclesId.GetVehicleId(Context.ConnectionId).ToString(),
-                        longitude = Convert.ToDouble(location.longitude),
-                        latitude = Convert.ToDouble(location.latitude),
+                        longitude = location.longitude,
+                        latitude = location.latitude,
                         timeStamp = location.timestamp.ToString(),
-                        deviceId = Convert.ToInt32(_vehiclesId.GetVehicleId(Context.ConnectionId)),
-                        
+                        deviceId = Convert.ToInt32(_vehiclesId.GetVehicleId(Context.ConnectionId))
                     });
-                    await Clients.Client(Context.ConnectionId).SendAsync("CommonMessage", "{ \"code\":\"200\", \"message\": Coordinates inserted successfully\"\" }");
                 }
-                catch (Exception ex)
-                {
-                    await Clients.Client(Context.ConnectionId).SendAsync("CommonMessage", "{ \"code\":\"103\", \"message\":\"Error:\""+ ex.Message +" }");
-                }
+                await Clients.Client(Context.ConnectionId).SendAsync("CommonMessage", "{ \"code\":\"200\", \"message\": Coordinates inserted successfully\"\" }");
+            }
+            catch (Exception ex)
+            {
+                await Clients.Client(Context.ConnectionId).SendAsync("CommonMessage", "{ \"code\":\"103\", \"message\":\"Error:\"" + ex.Message + " }");
             }
         }
 
-        public async void Subscribe(string InstitutionId, string VehicleId, string All) 
+        public async void Subscribe(string InstitutionId, string VehicleId, string All)
         {
             if (!string.IsNullOrEmpty(InstitutionId))
             {
@@ -156,7 +156,7 @@ namespace TrackService
                     timeStamp = DateTime.UtcNow.ToString()
                 });
             }
-            
+
             await base.OnConnectedAsync();
         }
 

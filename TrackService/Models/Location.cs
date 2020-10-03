@@ -8,8 +8,8 @@ namespace TrackService.Models
     }
     public class SendLocation
     {
-        public string latitude { get; set; }
-        public string longitude { get; set; }
+        public decimal latitude { get; set; }
+        public decimal longitude { get; set; }
         public string timestamp { get; set; }
         public int deviceId { get; set; }
     }

@@ -20,8 +20,8 @@ namespace TrackService.RethinkDb_Abstractions
     {
         public string mobileId { get; set; }
         public int deviceId { get; set; }
-        public double longitude { get; set; }
-        public double latitude { get; set; }
+        public decimal longitude { get; set; }
+        public decimal latitude { get; set; }
         public string timeStamp { get; set; }
 
 
@@ -46,8 +46,8 @@ namespace TrackService.RethinkDb_Abstractions
 
     public class Coordinates
     {
-        public double latitude { get; set; }
-        public double longitude { get; set; }
+        public decimal latitude { get; set; }
+        public decimal longitude { get; set; }
         public DateTime timeStamp { get; set; }
         public string mobileId { get; set; }
         public int deviceId { get; set; }

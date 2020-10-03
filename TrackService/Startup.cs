@@ -55,8 +55,8 @@ namespace TrackService
             services.AddSignalR(hubOptions =>
             {
                 hubOptions.MaximumReceiveMessageSize = 1024;  // bytes
-                hubOptions.KeepAliveInterval = TimeSpan.FromMinutes(15);
-                hubOptions.ClientTimeoutInterval = TimeSpan.FromMinutes(30);
+                hubOptions.KeepAliveInterval = TimeSpan.FromSeconds(3);
+                hubOptions.ClientTimeoutInterval = TimeSpan.FromSeconds(6);
             });
             var appSettingsSection = Configuration.GetSection("AppSettings");
             services.Configure<AppSettings>(appSettingsSection);
