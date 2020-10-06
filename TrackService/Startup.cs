@@ -13,6 +13,13 @@ using TrackService.RethinkDb_Changefeed;
 using TrackService.Helper.CronJobServices;
 using TrackService.Helper.CronJobServices.CronJobExtensionMethods;
 using TrackService.RethinkDb_Changefeed.Model.Common;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using Newtonsoft.Json;
+using Microsoft.AspNetCore.Http;
+using System.Threading.Tasks;
+using TrackService.Helper;
 
 namespace TrackService
 {
@@ -55,18 +62,75 @@ namespace TrackService
             services.AddSignalR(hubOptions =>
             {
                 hubOptions.MaximumReceiveMessageSize = 1024;  // bytes
-                hubOptions.KeepAliveInterval = TimeSpan.FromSeconds(3);
-                hubOptions.ClientTimeoutInterval = TimeSpan.FromSeconds(6);
+                hubOptions.KeepAliveInterval = TimeSpan.FromMinutes(3);
+                hubOptions.ClientTimeoutInterval = TimeSpan.FromMinutes(6);
             });
             var appSettingsSection = Configuration.GetSection("AppSettings");
             services.Configure<AppSettings>(appSettingsSection);
+            var appSettings = appSettingsSection.Get<AppSettings>();
 
             var dependenciessSection = Configuration.GetSection("Dependencies");
             services.Configure<Dependencies>(dependenciessSection);
 
             services.Configure<RethinkDbOptions>(Configuration.GetSection("RethinkDbDev"));
-            services.AddSingleton<IRethinkDbConnectionFactory, RethinkDbConnectionFactory>();
 
+            services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+            }).AddJwtBearer(x =>
+            {
+                x.RequireHttpsMetadata = false;
+                x.SaveToken = true;
+                x.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidAudience = appSettings.ValidAudience,
+                    ValidIssuer = appSettings.ValidIssuer,
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(appSettings.Secret)),
+                    // verify signature to avoid tampering
+                    ValidateLifetime = true, // validate the expiration
+                    RequireExpirationTime = true,
+                    ClockSkew = TimeSpan.FromSeconds(1) // tolerance for the expiration date
+                };
+                x.Events = new JwtBearerEvents
+                {
+                    OnAuthenticationFailed = context =>
+                    {
+                        var logger = context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger(nameof(JwtBearerEvents));
+                        logger.LogError("Authentication failed.", context.Exception);
+                        context.Response.StatusCode = 401;
+                        if (context.Exception.GetType() == typeof(SecurityTokenExpiredException))
+                        {
+                            context.Response.Headers.Add("Token-Expired", "true");
+                        }
+                        context.Response.OnStarting(async () =>
+                        {
+                            context.Response.ContentType = "application/json";
+                            ErrorMessage errorMessage = new ErrorMessage();
+                            errorMessage.Message = "Authentication failed.";
+                            await context.Response.WriteAsync(JsonConvert.SerializeObject(errorMessage));
+                        });
+                        return Task.CompletedTask;
+                    },
+                    OnMessageReceived = context =>
+                    {
+                        return Task.CompletedTask;
+                    },
+                    OnChallenge = context =>
+                    {
+                        var logger = context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger(nameof(JwtBearerEvents));
+                        logger.LogError("OnChallenge error", context.Error, context.ErrorDescription);
+                        return Task.CompletedTask;
+                    }
+                };
+            });
+
+
+            services.AddSingleton<IRethinkDbConnectionFactory, RethinkDbConnectionFactory>();
             services.AddSingleton<IRethinkDbStore, RethinkDbStore>();
             services.AddSingleton<TrackServiceHub, TrackServiceHub>();
             services.AddCors(c =>
@@ -91,8 +155,10 @@ namespace TrackService
             store.InitializeDatabase();
             app.UseHttpsRedirection();
             app.UseRouting();
+
+            app.UseAuthentication();
             app.UseAuthorization();
-            
+
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();

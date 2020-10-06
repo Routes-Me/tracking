@@ -6,9 +6,11 @@ using TrackService.Helper;
 using TrackService.RethinkDb_Abstractions;
 using TrackService.Helper.ConnectionMapping;
 using TrackService.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace TrackService
 {
+    [Authorize]
     public class TrackServiceHub : Hub
     {
         public readonly static ConnectionMapping<string> _connections = new ConnectionMapping<string>();
