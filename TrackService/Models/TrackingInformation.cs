@@ -8,7 +8,7 @@ namespace TrackService.Models
         [JsonProperty("id", NullValueHandling = NullValueHandling.Ignore)]
         public int vehicleId { get; set; }
         public int institutionId { get; set; }
-        public DateTime timeStamp { get; set; }
+        public DateTime timestamp { get; set; }
         public bool isLive { get; set; }
 
     }
@@ -17,7 +17,7 @@ namespace TrackService.Models
     {
         public decimal latitude { get; set; }
         public decimal longitude { get; set; }
-        public string timeStamp { get; set; }
+        public string timestamp { get; set; }
         public string mobileId { get; set; }
         public int deviceId { get; set; }
     }

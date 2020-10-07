@@ -74,6 +74,8 @@ namespace TrackService
 
             services.Configure<RethinkDbOptions>(Configuration.GetSection("RethinkDbDev"));
 
+  
+
             services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;

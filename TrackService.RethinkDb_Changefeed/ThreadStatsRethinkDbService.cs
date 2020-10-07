@@ -68,7 +68,7 @@ namespace TrackService.RethinkDb_Changefeed
         public Task InsertCordinates(CordinatesModel trackingStats)
         {
             DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
-            dtDateTime = dtDateTime.AddSeconds(Convert.ToDouble(trackingStats.timeStamp)).ToLocalTime();
+            dtDateTime = dtDateTime.AddSeconds(Convert.ToDouble(trackingStats.timestamp)).ToLocalTime();
             var vehicleId = Convert.ToInt32(trackingStats.mobileId);
             Cursor<object> vehicle = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(new { vehicleId = vehicleId }).Run(_rethinkDbConnection);
             if (vehicle.BufferedSize > 0)
@@ -77,11 +77,11 @@ namespace TrackService.RethinkDb_Changefeed
 
                 _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME)
                         .Filter(new { id = response.id })
-                        .Update(new { timeStamp = dtDateTime, isLive = true }).Run(_rethinkDbConnection);
+                        .Update(new { timestamp = dtDateTime, isLive = true }).Run(_rethinkDbConnection);
 
                 _rethinkDbSingleton.Db(DATABASE_NAME).Table(CORDINATE_TABLE_NAME).Insert(new Coordinates
                 {
-                    timeStamp = dtDateTime,
+                    timestamp = dtDateTime,
                     latitude = trackingStats.latitude,
                     longitude = trackingStats.longitude,
                     mobileId = response.id,
@@ -137,11 +137,11 @@ namespace TrackService.RethinkDb_Changefeed
 
             if (!string.IsNullOrEmpty(Convert.ToString(model.startAt)) && !string.IsNullOrEmpty(Convert.ToString(model.endAt)) && DateTime.TryParse(Convert.ToString(model.startAt), out startDate) && DateTime.TryParse(Convert.ToString(model.endAt), out endDate))
             {
-                ReqlFunction1 filterForStartDate = expr => expr["timeStamp"].Ge(startDate);
+                ReqlFunction1 filterForStartDate = expr => expr["timestamp"].Ge(startDate);
                 string filterSerializedForStartDate = ReqlRaw.ToRawString(filterForStartDate);
                 var filterExprForStartDate = ReqlRaw.FromRawString(filterSerializedForStartDate);
 
-                ReqlFunction1 filterForEndDate = expr => expr["timeStamp"].Le(endDate);
+                ReqlFunction1 filterForEndDate = expr => expr["timestamp"].Le(endDate);
                 string filterSerializedForEndDate = ReqlRaw.ToRawString(filterForEndDate);
                 var filterExprForEndDate = ReqlRaw.FromRawString(filterSerializedForEndDate);
 
@@ -171,7 +171,7 @@ namespace TrackService.RethinkDb_Changefeed
 
                         foreach (var coordinate in coordinates)
                         {
-                            string latitude = string.Empty, longitude = string.Empty, timeStamp = string.Empty;
+                            string latitude = string.Empty, longitude = string.Empty, timestamp = string.Empty;
                             foreach (var cordinatevalue in JObject.Parse(coordinate.ToString()).Children())
                             {
 
@@ -183,17 +183,17 @@ namespace TrackService.RethinkDb_Changefeed
                                 {
                                     longitude = ((Newtonsoft.Json.Linq.JProperty)cordinatevalue).Value.ToString();
                                 }
-                                else if (((Newtonsoft.Json.Linq.JProperty)cordinatevalue).Name.ToString() == "timeStamp")
+                                else if (((Newtonsoft.Json.Linq.JProperty)cordinatevalue).Name.ToString() == "timestamp")
                                 {
                                     var epocTime = ((Newtonsoft.Json.Linq.JProperty)cordinatevalue).Value.ToString();
-                                    foreach (var timeStampVal in JObject.Parse(epocTime).Children())
+                                    foreach (var timestampVal in JObject.Parse(epocTime).Children())
                                     {
-                                        if (((Newtonsoft.Json.Linq.JProperty)timeStampVal).Name.ToString() == "epoch_time")
+                                        if (((Newtonsoft.Json.Linq.JProperty)timestampVal).Name.ToString() == "epoch_time")
                                         {
-                                            var UnixTime = ((Newtonsoft.Json.Linq.JProperty)timeStampVal).Value.ToString();
+                                            var UnixTime = ((Newtonsoft.Json.Linq.JProperty)timestampVal).Value.ToString();
 
                                             System.DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
-                                            timeStamp = dateTime.AddSeconds(Convert.ToDouble(UnixTime)).ToLocalTime().ToString();
+                                            timestamp = dateTime.AddSeconds(Convert.ToDouble(UnixTime)).ToLocalTime().ToString();
                                             break;
                                         }
                                     }
@@ -207,7 +207,7 @@ namespace TrackService.RethinkDb_Changefeed
                             {
                                 latitude = Convert.ToDouble(latitude),
                                 longitude = Convert.ToDouble(longitude),
-                                timeStamp = timeStamp
+                                timestamp = timestamp
                             });
                         }
                     }
@@ -268,11 +268,11 @@ namespace TrackService.RethinkDb_Changefeed
 
             if (!string.IsNullOrEmpty(Convert.ToString(model.startAt)) && !string.IsNullOrEmpty(Convert.ToString(model.endAt)) && DateTime.TryParse(Convert.ToString(model.startAt), out startDate) && DateTime.TryParse(Convert.ToString(model.endAt), out endDate))
             {
-                ReqlFunction1 filterForStartDate = expr => expr["timeStamp"].Ge(startDate);
+                ReqlFunction1 filterForStartDate = expr => expr["timestamp"].Ge(startDate);
                 string filterSerializedForStartDate = ReqlRaw.ToRawString(filterForStartDate);
                 var filterExprForStartDate = ReqlRaw.FromRawString(filterSerializedForStartDate);
 
-                ReqlFunction1 filterForEndDate = expr => expr["timeStamp"].Le(endDate);
+                ReqlFunction1 filterForEndDate = expr => expr["timestamp"].Le(endDate);
                 string filterSerializedForEndDate = ReqlRaw.ToRawString(filterForEndDate);
                 var filterExprForEndDate = ReqlRaw.FromRawString(filterSerializedForEndDate);
 
@@ -302,7 +302,7 @@ namespace TrackService.RethinkDb_Changefeed
 
                         foreach (var coordinate in coordinates)
                         {
-                            string latitude = string.Empty, longitude = string.Empty, timeStamp = string.Empty;
+                            string latitude = string.Empty, longitude = string.Empty, timestamp = string.Empty;
                             foreach (var cordinatevalue in JObject.Parse(coordinate.ToString()).Children())
                             {
 
@@ -314,17 +314,17 @@ namespace TrackService.RethinkDb_Changefeed
                                 {
                                     longitude = ((Newtonsoft.Json.Linq.JProperty)cordinatevalue).Value.ToString();
                                 }
-                                else if (((Newtonsoft.Json.Linq.JProperty)cordinatevalue).Name.ToString() == "timeStamp")
+                                else if (((Newtonsoft.Json.Linq.JProperty)cordinatevalue).Name.ToString() == "timestamp")
                                 {
                                     var epocTime = ((Newtonsoft.Json.Linq.JProperty)cordinatevalue).Value.ToString();
-                                    foreach (var timeStampVal in JObject.Parse(epocTime).Children())
+                                    foreach (var timestampVal in JObject.Parse(epocTime).Children())
                                     {
-                                        if (((Newtonsoft.Json.Linq.JProperty)timeStampVal).Name.ToString() == "epoch_time")
+                                        if (((Newtonsoft.Json.Linq.JProperty)timestampVal).Name.ToString() == "epoch_time")
                                         {
-                                            var UnixTime = ((Newtonsoft.Json.Linq.JProperty)timeStampVal).Value.ToString();
+                                            var UnixTime = ((Newtonsoft.Json.Linq.JProperty)timestampVal).Value.ToString();
 
                                             System.DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
-                                            timeStamp = dateTime.AddSeconds(Convert.ToDouble(UnixTime)).ToLocalTime().ToString();
+                                            timestamp = dateTime.AddSeconds(Convert.ToDouble(UnixTime)).ToLocalTime().ToString();
                                             break;
                                         }
                                     }
@@ -338,7 +338,7 @@ namespace TrackService.RethinkDb_Changefeed
                             {
                                 latitude = Convert.ToDouble(latitude),
                                 longitude = Convert.ToDouble(longitude),
-                                timeStamp = timeStamp
+                                timestamp = timestamp
                             });
                         }
                     }
@@ -417,7 +417,7 @@ namespace TrackService.RethinkDb_Changefeed
         // This is called from background service Monitor Vehicle
         public void UpdateVehicleStatus()
         {
-            ReqlFunction1 filter = expr => expr["timeStamp"].Le(DateTime.UtcNow.AddMinutes(-10));
+            ReqlFunction1 filter = expr => expr["timestamp"].Le(DateTime.UtcNow.AddMinutes(-10));
             string filterSerialized = ReqlRaw.ToRawString(filter);
             var filterExpr = ReqlRaw.FromRawString(filterSerialized);
             Cursor<object> vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExpr).Run(_rethinkDbConnection);
@@ -456,7 +456,7 @@ namespace TrackService.RethinkDb_Changefeed
         {
             try
             {
-                ReqlFunction1 filter = expr => expr["timeStamp"].Ge(DateTime.UtcNow.AddHours(-24));
+                ReqlFunction1 filter = expr => expr["timestamp"].Ge(DateTime.UtcNow.AddHours(-24));
                 string filterSerialized = ReqlRaw.ToRawString(filter);
                 var filterExpr = ReqlRaw.FromRawString(filterSerialized);
                 Cursor<object> coordinates = _rethinkDbSingleton.Db(DATABASE_NAME).Table(CORDINATE_TABLE_NAME).Filter(filterExpr).Run(_rethinkDbConnection);
@@ -465,7 +465,7 @@ namespace TrackService.RethinkDb_Changefeed
                 double latitude = 0, longitude = 0;
                 int deviceId = 0, vehicleId = 0;
                 string CoordinateId = string.Empty;
-                DateTime? timeStamp = null;
+                DateTime? timestamp = null;
                 foreach (var coordinate in coordinates)
                 {
                     foreach (var value in JObject.Parse(coordinate.ToString()).Children())
@@ -482,17 +482,17 @@ namespace TrackService.RethinkDb_Changefeed
                         {
                             longitude = Convert.ToDouble(((Newtonsoft.Json.Linq.JProperty)value).Value.ToString());
                         }
-                        else if (((Newtonsoft.Json.Linq.JProperty)value).Name.ToString() == "timeStamp")
+                        else if (((Newtonsoft.Json.Linq.JProperty)value).Name.ToString() == "timestamp")
                         {
                             var epocTime = ((Newtonsoft.Json.Linq.JProperty)value).Value.ToString();
-                            foreach (var timeStampVal in JObject.Parse(epocTime).Children())
+                            foreach (var timestampVal in JObject.Parse(epocTime).Children())
                             {
-                                if (((Newtonsoft.Json.Linq.JProperty)timeStampVal).Name.ToString() == "epoch_time")
+                                if (((Newtonsoft.Json.Linq.JProperty)timestampVal).Name.ToString() == "epoch_time")
                                 {
-                                    var UnixTime = ((Newtonsoft.Json.Linq.JProperty)timeStampVal).Value.ToString();
+                                    var UnixTime = ((Newtonsoft.Json.Linq.JProperty)timestampVal).Value.ToString();
 
                                     System.DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
-                                    timeStamp = dateTime.AddSeconds(Convert.ToDouble(UnixTime)).ToLocalTime();
+                                    timestamp = dateTime.AddSeconds(Convert.ToDouble(UnixTime)).ToLocalTime();
                                     break;
                                 }
                             }
@@ -520,7 +520,7 @@ namespace TrackService.RethinkDb_Changefeed
                         CoordinateId = CoordinateId,
                         Latitude = latitude,
                         Longitude = longitude,
-                        Timestamp = timeStamp.ToString(),
+                        timestamp = timestamp.ToString(),
                         VehicleId = vehicleId,
                         DeviceId = deviceId
                     });
@@ -548,7 +548,7 @@ namespace TrackService.RethinkDb_Changefeed
 
         public void SyncVehiclesToArchiveTable()
         {
-            ReqlFunction1 filter = expr => expr["timeStamp"].Ge(DateTime.UtcNow.AddDays(-7));
+            ReqlFunction1 filter = expr => expr["timestamp"].Ge(DateTime.UtcNow.AddDays(-7));
             string filterSerialized = ReqlRaw.ToRawString(filter);
             var filterExpr = ReqlRaw.FromRawString(filterSerialized);
             Cursor<object> vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExpr).Run(_rethinkDbConnection);
@@ -571,7 +571,7 @@ namespace TrackService.RethinkDb_Changefeed
                         institutionId = model.institutionId,
                         vehicleId = model.vehicleId,
                         isLive = true,
-                        timeStamp = DateTime.UtcNow
+                        timestamp = DateTime.UtcNow
                     }).Run(_rethinkDbConnection);
                 }).Wait();
             }

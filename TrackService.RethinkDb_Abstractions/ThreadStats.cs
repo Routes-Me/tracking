@@ -7,12 +7,12 @@ namespace TrackService.RethinkDb_Abstractions
     {
         public int vehicleId { get; set; }
         public int institutionId { get; set; }
-        public string timeStamp { get; set; }
+        public string timestamp { get; set; }
         
 
         public override string ToString()
         {
-            return $"vehicleId: {vehicleId}, institutionId: {institutionId}, timeStamp: {timeStamp}";
+            return $"vehicleId: {vehicleId}, institutionId: {institutionId}, timestamp: {timestamp}";
         }
     }
 
@@ -22,12 +22,12 @@ namespace TrackService.RethinkDb_Abstractions
         public int deviceId { get; set; }
         public decimal longitude { get; set; }
         public decimal latitude { get; set; }
-        public string timeStamp { get; set; }
+        public string timestamp { get; set; }
 
 
         public override string ToString()
         {
-            return $"mobileId: {mobileId}, deviceId: {deviceId}, latitude: {latitude}, longitude: {longitude}, timeStamp: {timeStamp}";
+            return $"mobileId: {mobileId}, deviceId: {deviceId}, latitude: {latitude}, longitude: {longitude}, timestamp: {timestamp}";
         }
     }
 
@@ -35,12 +35,12 @@ namespace TrackService.RethinkDb_Abstractions
     {
         public int vehicleId { get; set; }
         public int institutionId { get; set; }
-        public DateTime timeStamp { get; set; }
+        public DateTime timestamp { get; set; }
         public bool isLive { get; set; }
 
         public override string ToString()
         {
-            return $"vehicleId: {vehicleId}, institutionId: {institutionId}, timeStamp: {timeStamp}, isLive: {isLive}";
+            return $"vehicleId: {vehicleId}, institutionId: {institutionId}, timestamp: {timestamp}, isLive: {isLive}";
         }
     }
 
@@ -48,12 +48,12 @@ namespace TrackService.RethinkDb_Abstractions
     {
         public decimal latitude { get; set; }
         public decimal longitude { get; set; }
-        public DateTime timeStamp { get; set; }
+        public DateTime timestamp { get; set; }
         public string mobileId { get; set; }
         public int deviceId { get; set; }
         public override string ToString()
         {
-            return $"mobileId: {mobileId}, latitude: {latitude}, longitude: {longitude}, timeStamp: {timeStamp}, deviceId: {deviceId}";
+            return $"mobileId: {mobileId}, latitude: {latitude}, longitude: {longitude}, timestamp: {timestamp}, deviceId: {deviceId}";
         }
     }
 
@@ -79,7 +79,7 @@ namespace TrackService.RethinkDb_Abstractions
     {
         public double latitude { get; set; }
         public double longitude { get; set; }
-        public string timeStamp { get; set; }
+        public string timestamp { get; set; }
     }
 
     public class ArchiveVehiclesList
@@ -111,7 +111,7 @@ namespace TrackService.RethinkDb_Abstractions
         public string deviceId { get; set; }
         public int? vehicleId { get; set; }
         public int? institutionId { get; set; }
-        public DateTime? timeStamp { get; set; }
+        public DateTime? timestamp { get; set; }
         public int? isLive { get; set; }
     }
 
@@ -121,14 +121,14 @@ namespace TrackService.RethinkDb_Abstractions
         public string CoordinateId { get; set; }
         public double Latitude { get; set; }
         public double Longitude { get; set; }
-        public string Timestamp { get; set; }
+        public string timestamp { get; set; }
         public int VehicleId { get; set; }
         public int DeviceId { get; set; }
         
         //public string mobileId { get; set; }
         //public double longitude { get; set; }
         //public double latitude { get; set; }
-        //public DateTime? timeStamp { get; set; }
+        //public DateTime? timestamp { get; set; }
     }
 
     public class MobileJSONResponse
@@ -136,11 +136,11 @@ namespace TrackService.RethinkDb_Abstractions
         public string id { get; set;  }
         public int vehicleId { get; set; }
         public int institutionId { get; set; }
-        public timeStamp timeStamp { get; set; }
+        public timestamp timestamp { get; set; }
         public bool isLive { get; set; }
     }
 
-    public class timeStamp
+    public class timestamp
     {
         public string reql_type { get; set; }
         public decimal epoch_time { get; set; }

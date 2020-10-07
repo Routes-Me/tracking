@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace TrackService
 {
-    [Authorize]
+    //[Authorize]
     public class TrackServiceHub : Hub
     {
         public readonly static ConnectionMapping<string> _connections = new ConnectionMapping<string>();
@@ -45,8 +45,8 @@ namespace TrackService
                         mobileId = _vehiclesId.GetVehicleId(Context.ConnectionId).ToString(),
                         longitude = location.longitude,
                         latitude = location.latitude,
-                        timeStamp = location.timestamp.ToString(),
-                        deviceId = Convert.ToInt32(_vehiclesId.GetVehicleId(Context.ConnectionId))
+                        timestamp = location.timestamp.ToString(),
+                        deviceId = Convert.ToInt32(_deviceId.GetDeviceId(Context.ConnectionId))
                     });
                 }
                 await Clients.Client(Context.ConnectionId).SendAsync("CommonMessage", "{ \"code\":\"200\", \"message\": Coordinates inserted successfully\"\" }");
@@ -155,7 +155,7 @@ namespace TrackService
                 {
                     institutionId = Convert.ToInt32(Context.GetHttpContext().Request.Query["institutionId"].ToString()),
                     vehicleId = Convert.ToInt32(Context.GetHttpContext().Request.Query["vehicleId"].ToString()),
-                    timeStamp = DateTime.UtcNow.ToString()
+                    timestamp = DateTime.UtcNow.ToString()
                 });
             }
 

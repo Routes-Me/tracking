@@ -39,8 +39,8 @@ namespace TrackService.Helper
                         DeviceId = newThreadStats.Split(",")[4].Replace("deviceId:", "").Trim();
                         var Latitude = newThreadStats.Split(",")[1].Replace("latitude:", "").Trim();
                         var Longitude = newThreadStats.Split(",")[2].Replace("longitude:", "").Trim();
-                        var TimeStamp = newThreadStats.Split(",")[3].Replace("timeStamp:", "").Trim();
-                        var json = "{\"vehicleId\": \"" + VehicleId + "\",\"institutionId\": \"" + InstitutionId + "\",\"deviceId\": \"" + DeviceId + "\",\"coordinates\": {\"latitude\": \"" + Latitude + "\", \"longitude\": \"" + Longitude + "\",\"timeStamp\": \"" + TimeStamp + "\"}}";
+                        var timestamp = newThreadStats.Split(",")[3].Replace("timestamp:", "").Trim();
+                        var json = "{\"vehicleId\": \"" + VehicleId + "\",\"institutionId\": \"" + InstitutionId + "\",\"deviceId\": \"" + DeviceId + "\",\"coordinates\": {\"latitude\": \"" + Latitude + "\", \"longitude\": \"" + Longitude + "\",\"timestamp\": \"" + timestamp + "\"}}";
                         trackServiceHub = new TrackServiceHub();
                         await Task.Run(() => { trackServiceHub.SendDataToDashboard(_hubContext, InstitutionId, VehicleId, json); }).ConfigureAwait(true); // To send data to all subscribe vehicled for admin
                     }
