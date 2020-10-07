@@ -58,12 +58,13 @@ namespace TrackService
             //    //c.CronExpression = @"4 13 * * * "; 
             //    c.CronExpression = @"0 2 */7 * * "; // Run every 7 days at 2 AM
             //});
-
+            services.AddSignalR();
             services.AddSignalR(hubOptions =>
             {
                 hubOptions.MaximumReceiveMessageSize = 1024;  // bytes
                 hubOptions.KeepAliveInterval = TimeSpan.FromMinutes(3);
                 hubOptions.ClientTimeoutInterval = TimeSpan.FromMinutes(6);
+                hubOptions.EnableDetailedErrors = true;
             });
             var appSettingsSection = Configuration.GetSection("AppSettings");
             services.Configure<AppSettings>(appSettingsSection);
@@ -74,7 +75,13 @@ namespace TrackService
 
             services.Configure<RethinkDbOptions>(Configuration.GetSection("RethinkDbDev"));
 
-  
+            services.AddSingleton<IRethinkDbConnectionFactory, RethinkDbConnectionFactory>();
+            services.AddSingleton<IRethinkDbStore, RethinkDbStore>();
+            services.AddSingleton<TrackServiceHub, TrackServiceHub>();
+            services.AddCors(c =>
+            {
+                c.AddPolicy("AllowOrigin", options => options.AllowAnyOrigin());
+            });
 
             services.AddAuthentication(options =>
             {
@@ -96,7 +103,7 @@ namespace TrackService
                     // verify signature to avoid tampering
                     ValidateLifetime = true, // validate the expiration
                     RequireExpirationTime = true,
-                    ClockSkew = TimeSpan.FromSeconds(1) // tolerance for the expiration date
+                    ClockSkew = TimeSpan.FromMilliseconds(0) // tolerance for the expiration date
                 };
                 x.Events = new JwtBearerEvents
                 {
@@ -118,8 +125,19 @@ namespace TrackService
                         });
                         return Task.CompletedTask;
                     },
+
                     OnMessageReceived = context =>
                     {
+                        string accessToken = context.Request.Query["access_token"];
+
+                        // If the request is for our hub...
+                        var path = context.HttpContext.Request.Path;
+                        if (!string.IsNullOrEmpty(accessToken) &&
+                            (path.StartsWithSegments("/trackServiceHub")))
+                        {
+                            // Read the token out of the query string
+                            context.Token = accessToken;
+                        }
                         return Task.CompletedTask;
                     },
                     OnChallenge = context =>
@@ -130,15 +148,6 @@ namespace TrackService
                     }
                 };
             });
-
-
-            services.AddSingleton<IRethinkDbConnectionFactory, RethinkDbConnectionFactory>();
-            services.AddSingleton<IRethinkDbStore, RethinkDbStore>();
-            services.AddSingleton<TrackServiceHub, TrackServiceHub>();
-            services.AddCors(c =>
-            {
-                c.AddPolicy("AllowOrigin", options => options.AllowAnyOrigin());
-            });
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILoggerFactory loggerFactory, IRethinkDbConnectionFactory connectionFactory, IRethinkDbStore store)
@@ -147,7 +156,7 @@ namespace TrackService
             {
                 app.UseDeveloperExceptionPage();
             }
-            
+
             app.UseCors(builder => builder
                 .AllowAnyHeader()
                 .AllowAnyMethod()

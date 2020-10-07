@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace TrackService
 {
-    //[Authorize]
+    [Authorize]
     public class TrackServiceHub : Hub
     {
         public readonly static ConnectionMapping<string> _connections = new ConnectionMapping<string>();
@@ -147,16 +147,22 @@ namespace TrackService
         {
             if (Context.GetHttpContext().Request.Query.Keys.Count > 1)
             {
-                _deviceId.Add(Context.ConnectionId, Context.GetHttpContext().Request.Query["deviceId"].ToString());
-                _vehiclesId.Add(Context.ConnectionId, Context.GetHttpContext().Request.Query["vehicleId"].ToString());
-                _institutionsId.Add(Context.ConnectionId, Context.GetHttpContext().Request.Query["institutionId"].ToString());
+                var institutionId = Context.GetHttpContext().Request.Query["institutionId"].ToString();
+                var vehicleId = Context.GetHttpContext().Request.Query["vehicleId"].ToString();
+                var deviceId = Context.GetHttpContext().Request.Query["deviceId"].ToString();
+                _deviceId.Add(Context.ConnectionId, deviceId);
+                _vehiclesId.Add(Context.ConnectionId, vehicleId);
+                _institutionsId.Add(Context.ConnectionId, institutionId);
 
-                await _coordinateChangeFeedbackBackgroundService.InsertMobiles(new MobilesModel
+                if (!string.IsNullOrEmpty(institutionId) && !string.IsNullOrEmpty(vehicleId))
                 {
-                    institutionId = Convert.ToInt32(Context.GetHttpContext().Request.Query["institutionId"].ToString()),
-                    vehicleId = Convert.ToInt32(Context.GetHttpContext().Request.Query["vehicleId"].ToString()),
-                    timestamp = DateTime.UtcNow.ToString()
-                });
+                    await _coordinateChangeFeedbackBackgroundService.InsertMobiles(new MobilesModel
+                    {
+                        institutionId = Convert.ToInt32(Context.GetHttpContext().Request.Query["institutionId"].ToString()),
+                        vehicleId = Convert.ToInt32(Context.GetHttpContext().Request.Query["vehicleId"].ToString()),
+                        timestamp = DateTime.UtcNow.ToString()
+                    });
+                }
             }
 
             await base.OnConnectedAsync();
