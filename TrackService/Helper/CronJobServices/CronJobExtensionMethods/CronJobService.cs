@@ -29,7 +29,11 @@ namespace TrackService.Helper.CronJobServices.CronJobExtensionMethods
             if (next.HasValue)
             {
                 var delay = next.Value - DateTimeOffset.Now;
-                _timer = new System.Timers.Timer(delay.TotalMinutes);
+                if (delay.TotalMilliseconds <= 0)   // prevent non-positive values from being passed into Timer
+                {
+                    await ScheduleJob(cancellationToken);
+                }
+                _timer = new System.Timers.Timer(delay.TotalMilliseconds);
                 _timer.Elapsed += async (sender, args) =>
                 {
                     _timer.Dispose();  // reset and dispose timer

@@ -45,28 +45,36 @@ namespace TrackService
             services.AddServerSentEvents();
             services.AddThreadStats();
 
-            //services.AddCronJob<SyncCoordinates>(c =>
-            //{
-            //    c.TimeZoneInfo = TimeZoneInfo.Local;
-            //    c.CronExpression = @"0 1 */1 * * ";
-            //    //c.CronExpression = @"* * */1 * * ";
-            //});
+            services.AddSingleton<IRethinkDbConnectionFactory, RethinkDbConnectionFactory>();
+            services.AddSingleton<IRethinkDbStore, RethinkDbStore>();
+            services.AddSingleton<TrackServiceHub, TrackServiceHub>();
 
-            //services.AddCronJob<SyncVehicles>(c =>
-            //{
-            //    c.TimeZoneInfo = TimeZoneInfo.Local;
-            //    //c.CronExpression = @"4 13 * * * "; 
-            //    c.CronExpression = @"0 2 */7 * * "; // Run every 7 days at 2 AM
-            //});
+            services.AddCors(c =>
+            {
+                c.AddPolicy("AllowOrigin", options => options.AllowAnyOrigin());
+            });
+
             services.AddSignalR();
             services.AddSignalR(hubOptions =>
             {
                 hubOptions.MaximumReceiveMessageSize = 1024;  // bytes
-                hubOptions.ClientTimeoutInterval = TimeSpan.FromMinutes(4);
-                hubOptions.KeepAliveInterval = TimeSpan.FromMinutes(2);
+                hubOptions.KeepAliveInterval = TimeSpan.FromMinutes(3);
+                hubOptions.ClientTimeoutInterval = TimeSpan.FromMinutes(6);
                 hubOptions.EnableDetailedErrors = true;
-                
             });
+
+            services.AddCronJob<SyncCoordinates>(c =>
+            {
+                c.TimeZoneInfo = TimeZoneInfo.Utc;
+                c.CronExpression = @"0 1 */1 * * "; // Run every day at 1 AM
+            });
+
+            services.AddCronJob<SyncVehicles>(c =>
+            {
+                c.TimeZoneInfo = TimeZoneInfo.Utc;
+                c.CronExpression = @"0 3 */7 * * "; // Run every 7 day at 3 AM
+            });
+            
             var appSettingsSection = Configuration.GetSection("AppSettings");
             services.Configure<AppSettings>(appSettingsSection);
             var appSettings = appSettingsSection.Get<AppSettings>();
@@ -75,15 +83,6 @@ namespace TrackService
             services.Configure<Dependencies>(dependenciessSection);
 
             services.Configure<RethinkDbOptions>(Configuration.GetSection("RethinkDbDev"));
-
-            services.AddSingleton<IRethinkDbConnectionFactory, RethinkDbConnectionFactory>();
-            services.AddSingleton<IRethinkDbStore, RethinkDbStore>();
-            services.AddSingleton<TrackServiceHub, TrackServiceHub>();
-            services.AddCors(c =>
-            {
-                c.AddPolicy("AllowOrigin", options => options.AllowAnyOrigin());
-            });
-
             services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
