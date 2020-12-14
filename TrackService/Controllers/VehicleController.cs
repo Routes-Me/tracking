@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using TrackService.Helper;
 using TrackService.RethinkDb_Abstractions;
@@ -24,42 +25,18 @@ namespace TrackService.Controllers
         }
 
         [HttpGet]
-        [Route("vehicleStatus")]
-        public async Task<IActionResult> VehicleStatus([FromQuery] IdleModel IdleModel)
+        [Route("vehicles")]
+        public async Task<IActionResult> VehicleStatus([FromQuery] Pagination pageInfo, [FromQuery] IdleModel IdleModel)
         {
-            VehicleResponse response = new VehicleResponse();
-            try
+            if (string.IsNullOrEmpty(Convert.ToString(IdleModel.institutionId)))
             {
-                if (ModelState.IsValid)
-                {
-                    List<VehicleDetails> vehicleDetails = new List<VehicleDetails>();
-
-                    if (string.IsNullOrEmpty(Convert.ToString(IdleModel.institutionId)))
-                        await Task.Run(() => { response = _coordinateChangeFeedbackBackgroundService.GetAllVehicleDetail(IdleModel); }).ConfigureAwait(false);
-                    else
-                        await Task.Run(() => { response = _coordinateChangeFeedbackBackgroundService.GetAllVehicleByInstitutionId(IdleModel); }).ConfigureAwait(false);
-
-                    if (response.responseCode != ResponseCode.Success)
-                        return NotFound(response);
-                    else
-                        return Ok(response);
-                }
-                else
-                {
-                    response.Status = false;
-                    response.Message = "Validation error.";
-                    response.responseCode = ResponseCode.Forbidden;
-                    response.Data = null;
-                    return BadRequest(response);
-                }
+                dynamic response = await _coordinateChangeFeedbackBackgroundService.GetAllVehicleDetail(pageInfo, IdleModel);
+                return StatusCode((int)response.statusCode, response);
             }
-            catch (Exception ex)
+            else
             {
-                response.Status = false;
-                response.Message = "Something went wrong while getting vehicle data. Error - " + ex.Message;
-                response.responseCode = ResponseCode.InternalServerError;
-                response.Data = null;
-                return BadRequest(response);
+                dynamic response = await _coordinateChangeFeedbackBackgroundService.GetAllVehicleByInstitutionId(IdleModel);
+                return StatusCode((int)response.statusCode, response);
             }
         }
     }

@@ -14,6 +14,7 @@ using Nancy.Json;
 using System.Net;
 using TrackService.RethinkDb_Changefeed.Model.Common;
 using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.Http;
 
 namespace TrackService.RethinkDb_Changefeed
 {
@@ -100,279 +101,287 @@ namespace TrackService.RethinkDb_Changefeed
             );
         }
 
-        public VehicleResponse GetAllVehicleByInstitutionId(IdleModel model)
+        public async Task<dynamic> GetAllVehicleByInstitutionId(IdleModel model)
         {
-            var keys = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Run(_rethinkDbConnection);
-            DateTime startDate;
-            DateTime endDate;
-            string filterSerializedForLive = string.Empty;
-            Cursor<object> vehicles;
-            VehicleResponse oVehicleResponse = new VehicleResponse();
-
-            ReqlFunction1 filterForinstitutionId = expr => expr["institutionId"].Eq(Convert.ToInt32(model.institutionId));
-            string filterSerializedForinstitutionId = ReqlRaw.ToRawString(filterForinstitutionId);
-            var filterExprForinstitutionId = ReqlRaw.FromRawString(filterSerializedForinstitutionId);
-
-            Cursor<object> InstitutionData = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Run(_rethinkDbConnection);
-            if (InstitutionData.BufferedSize == 0)
+            try
             {
-                oVehicleResponse.Status = false;
-                oVehicleResponse.Message = "Institution does not exists in database.";
-                oVehicleResponse.responseCode = ResponseCode.NotFound;
-                oVehicleResponse.Data = null;
-                return oVehicleResponse;
-            }
+                var keys = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Run(_rethinkDbConnection);
+                DateTime startDate;
+                DateTime endDate;
+                string filterSerializedForLive = string.Empty;
+                Cursor<object> vehicles;
+                VehicleResponse oVehicleResponse = new VehicleResponse();
 
-            if (model.status == "active")
-            {
-                ReqlFunction1 filterForLive = expr => expr["isLive"].Eq(true);
-                filterSerializedForLive = ReqlRaw.ToRawString(filterForLive);
-            }
-            else
-            {
-                ReqlFunction1 filterForLive = expr => expr["isLive"].Eq(false);
-                filterSerializedForLive = ReqlRaw.ToRawString(filterForLive);
-            }
-            var filterExprForLive = ReqlRaw.FromRawString(filterSerializedForLive);
+                ReqlFunction1 filterForinstitutionId = expr => expr["institutionId"].Eq(Convert.ToInt32(model.institutionId));
+                string filterSerializedForinstitutionId = ReqlRaw.ToRawString(filterForinstitutionId);
+                var filterExprForinstitutionId = ReqlRaw.FromRawString(filterSerializedForinstitutionId);
 
-            if (!string.IsNullOrEmpty(Convert.ToString(model.startAt)) && !string.IsNullOrEmpty(Convert.ToString(model.endAt)) && DateTime.TryParse(Convert.ToString(model.startAt), out startDate) && DateTime.TryParse(Convert.ToString(model.endAt), out endDate))
-            {
-                ReqlFunction1 filterForStartDate = expr => expr["timestamp"].Ge(startDate);
-                string filterSerializedForStartDate = ReqlRaw.ToRawString(filterForStartDate);
-                var filterExprForStartDate = ReqlRaw.FromRawString(filterSerializedForStartDate);
+                Cursor<object> InstitutionData = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Run(_rethinkDbConnection);
+                if (InstitutionData.BufferedSize == 0)
+                    return ReturnResponse.ErrorResponse("Institution does not exists in database.", StatusCodes.Status404NotFound);
 
-                ReqlFunction1 filterForEndDate = expr => expr["timestamp"].Le(endDate);
-                string filterSerializedForEndDate = ReqlRaw.ToRawString(filterForEndDate);
-                var filterExprForEndDate = ReqlRaw.FromRawString(filterSerializedForEndDate);
-
-                vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterExprForLive).Filter(filterForStartDate).Filter(filterForEndDate).Run(_rethinkDbConnection);
-            }
-            else
-            {
-                vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterExprForLive).Run(_rethinkDbConnection);
-            }
-
-            List<VehicleDetails> listVehicles = new List<VehicleDetails>();
-            List<CoordinatesDetail> listCoordinates = new List<CoordinatesDetail>();
-
-            foreach (var vehicle in vehicles)
-            {
-                string VehicleId = string.Empty, institutionId = string.Empty, DeviceId = string.Empty;
-                foreach (var value in JObject.Parse(vehicle.ToString()).Children())
+                if (model.status == "active")
                 {
+                    ReqlFunction1 filterForLive = expr => expr["isLive"].Eq(true);
+                    filterSerializedForLive = ReqlRaw.ToRawString(filterForLive);
+                }
+                else
+                {
+                    ReqlFunction1 filterForLive = expr => expr["isLive"].Eq(false);
+                    filterSerializedForLive = ReqlRaw.ToRawString(filterForLive);
+                }
+                var filterExprForLive = ReqlRaw.FromRawString(filterSerializedForLive);
 
-                    if (((Newtonsoft.Json.Linq.JProperty)value).Name.ToString() == "id")
+                if (!string.IsNullOrEmpty(Convert.ToString(model.startAt)) && !string.IsNullOrEmpty(Convert.ToString(model.endAt)) && DateTime.TryParse(Convert.ToString(model.startAt), out startDate) && DateTime.TryParse(Convert.ToString(model.endAt), out endDate))
+                {
+                    ReqlFunction1 filterForStartDate = expr => expr["timestamp"].Ge(startDate);
+                    string filterSerializedForStartDate = ReqlRaw.ToRawString(filterForStartDate);
+                    var filterExprForStartDate = ReqlRaw.FromRawString(filterSerializedForStartDate);
+
+                    ReqlFunction1 filterForEndDate = expr => expr["timestamp"].Le(endDate);
+                    string filterSerializedForEndDate = ReqlRaw.ToRawString(filterForEndDate);
+                    var filterExprForEndDate = ReqlRaw.FromRawString(filterSerializedForEndDate);
+
+                    vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterExprForLive).Filter(filterForStartDate).Filter(filterForEndDate).Run(_rethinkDbConnection);
+                }
+                else
+                {
+                    vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterExprForLive).Run(_rethinkDbConnection);
+                }
+
+                List<VehicleDetails> listVehicles = new List<VehicleDetails>();
+                List<CoordinatesDetail> listCoordinates = new List<CoordinatesDetail>();
+
+                foreach (var vehicle in vehicles)
+                {
+                    string VehicleId = string.Empty, institutionId = string.Empty, DeviceId = string.Empty;
+                    foreach (var value in JObject.Parse(vehicle.ToString()).Children())
                     {
 
-                        ReqlFunction1 cordinatefilter = expr => expr["mobileId"].Eq(((Newtonsoft.Json.Linq.JProperty)value).Value.ToString());
-                        string cordinatefilterSerialized = ReqlRaw.ToRawString(cordinatefilter);
-                        var cordinatefilterExpr = ReqlRaw.FromRawString(cordinatefilterSerialized);
-                        Cursor<object> coordinates = _rethinkDbSingleton.Db(DATABASE_NAME).Table(CORDINATE_TABLE_NAME).Filter(cordinatefilterExpr).Run(_rethinkDbConnection);
-
-                        foreach (var coordinate in coordinates)
+                        if (((JProperty)value).Name.ToString() == "id")
                         {
-                            string latitude = string.Empty, longitude = string.Empty, timestamp = string.Empty;
-                            foreach (var cordinatevalue in JObject.Parse(coordinate.ToString()).Children())
+
+                            ReqlFunction1 cordinatefilter = expr => expr["mobileId"].Eq(((JProperty)value).Value.ToString());
+                            string cordinatefilterSerialized = ReqlRaw.ToRawString(cordinatefilter);
+                            var cordinatefilterExpr = ReqlRaw.FromRawString(cordinatefilterSerialized);
+                            Cursor<object> coordinates = _rethinkDbSingleton.Db(DATABASE_NAME).Table(CORDINATE_TABLE_NAME).Filter(cordinatefilterExpr).Run(_rethinkDbConnection);
+
+                            foreach (var coordinate in coordinates)
                             {
+                                string latitude = string.Empty, longitude = string.Empty, timestamp = string.Empty;
+                                foreach (var cordinatevalue in JObject.Parse(coordinate.ToString()).Children())
+                                {
 
-                                if (((Newtonsoft.Json.Linq.JProperty)cordinatevalue).Name.ToString() == "latitude")
-                                {
-                                    latitude = ((Newtonsoft.Json.Linq.JProperty)cordinatevalue).Value.ToString();
-                                }
-                                else if (((Newtonsoft.Json.Linq.JProperty)cordinatevalue).Name.ToString() == "longitude")
-                                {
-                                    longitude = ((Newtonsoft.Json.Linq.JProperty)cordinatevalue).Value.ToString();
-                                }
-                                else if (((Newtonsoft.Json.Linq.JProperty)cordinatevalue).Name.ToString() == "timestamp")
-                                {
-                                    var epocTime = ((Newtonsoft.Json.Linq.JProperty)cordinatevalue).Value.ToString();
-                                    foreach (var timestampVal in JObject.Parse(epocTime).Children())
+                                    if (((JProperty)cordinatevalue).Name.ToString() == "latitude")
                                     {
-                                        if (((Newtonsoft.Json.Linq.JProperty)timestampVal).Name.ToString() == "epoch_time")
+                                        latitude = ((JProperty)cordinatevalue).Value.ToString();
+                                    }
+                                    else if (((JProperty)cordinatevalue).Name.ToString() == "longitude")
+                                    {
+                                        longitude = ((JProperty)cordinatevalue).Value.ToString();
+                                    }
+                                    else if (((JProperty)cordinatevalue).Name.ToString() == "timestamp")
+                                    {
+                                        var epocTime = ((JProperty)cordinatevalue).Value.ToString();
+                                        foreach (var timestampVal in JObject.Parse(epocTime).Children())
                                         {
-                                            var UnixTime = ((Newtonsoft.Json.Linq.JProperty)timestampVal).Value.ToString();
+                                            if (((JProperty)timestampVal).Name.ToString() == "epoch_time")
+                                            {
+                                                var UnixTime = ((JProperty)timestampVal).Value.ToString();
 
-                                            System.DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
-                                            timestamp = dateTime.AddSeconds(Convert.ToDouble(UnixTime)).ToLocalTime().ToString();
-                                            break;
+                                                System.DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
+                                                timestamp = dateTime.AddSeconds(Convert.ToDouble(UnixTime)).ToLocalTime().ToString();
+                                                break;
+                                            }
                                         }
                                     }
+                                    else if (((JProperty)cordinatevalue).Name.ToString() == "deviceId")
+                                    {
+                                        DeviceId = ((JProperty)cordinatevalue).Value.ToString();
+                                    }
                                 }
-                                else if (((Newtonsoft.Json.Linq.JProperty)cordinatevalue).Name.ToString() == "deviceId")
+                                listCoordinates.Add(new CoordinatesDetail
                                 {
-                                    DeviceId = ((Newtonsoft.Json.Linq.JProperty)cordinatevalue).Value.ToString();
-                                }
+                                    latitude = Convert.ToDouble(latitude),
+                                    longitude = Convert.ToDouble(longitude),
+                                    timestamp = timestamp
+                                });
                             }
-                            listCoordinates.Add(new CoordinatesDetail
-                            {
-                                latitude = Convert.ToDouble(latitude),
-                                longitude = Convert.ToDouble(longitude),
-                                timestamp = timestamp
-                            });
+                        }
+                        else if (((JProperty)value).Name.ToString() == "vehicleId")
+                        {
+                            VehicleId = ((JProperty)value).Value.ToString();
+                        }
+                        else if (((JProperty)value).Name.ToString() == "institutionId")
+                        {
+                            institutionId = ((JProperty)value).Value.ToString();
                         }
                     }
-                    else if (((Newtonsoft.Json.Linq.JProperty)value).Name.ToString() == "vehicleId")
+                    listVehicles.Add(new VehicleDetails
                     {
-                        VehicleId = ((Newtonsoft.Json.Linq.JProperty)value).Value.ToString();
-                    }
-                    else if (((Newtonsoft.Json.Linq.JProperty)value).Name.ToString() == "institutionId")
-                    {
-                        institutionId = ((Newtonsoft.Json.Linq.JProperty)value).Value.ToString();
-                    }
+                        deviceId = DeviceId,
+                        vehicleId = VehicleId,
+                        institutionId = institutionId,
+                        coordinates = listCoordinates
+                    });
                 }
-                listVehicles.Add(new VehicleDetails
-                {
-                    deviceId = DeviceId,
-                    vehicleId = VehicleId,
-                    institutionId = institutionId,
-                    coordinates = listCoordinates
-                });
-            }
 
-            if (listVehicles == null || listVehicles.Count == 0)
-            {
-                oVehicleResponse.Status = false;
-                oVehicleResponse.Message = "Vehicle does not exists in database.";
-                oVehicleResponse.responseCode = ResponseCode.NotFound;
-                oVehicleResponse.Data = null;
+                if (listVehicles == null || listVehicles.Count == 0)
+                    return ReturnResponse.ErrorResponse("Vehicle not found.", StatusCodes.Status404NotFound);
+
+                oVehicleResponse.status = true;
+                oVehicleResponse.message = "Vehicle retrived successfully.";
+                oVehicleResponse.statusCode = StatusCodes.Status200OK;
+                oVehicleResponse.data = listVehicles;
                 return oVehicleResponse;
             }
-
-            oVehicleResponse.Status = true;
-            oVehicleResponse.Message = "Success";
-            oVehicleResponse.responseCode = ResponseCode.Success;
-            oVehicleResponse.Data = listVehicles;
-            return oVehicleResponse;
+            catch (Exception ex)
+            {
+                return ReturnResponse.ExceptionResponse(ex);
+            }
         }
 
-        public VehicleResponse GetAllVehicleDetail(IdleModel model)
+        public async Task<dynamic> GetAllVehicleDetail(Pagination pageInfo, IdleModel model)
         {
-            var keys = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Run(_rethinkDbConnection);
-            DateTime startDate;
-            DateTime endDate;
-            Cursor<object> vehicles;
-            string filterSerialized = string.Empty;
-            VehicleResponse oVehicleResponse = new VehicleResponse();
-
-            if (model.status == "active")
+            try
             {
-                ReqlFunction1 filter = expr => expr["isLive"].Eq(true);
-                filterSerialized = ReqlRaw.ToRawString(filter);
-            }
-            else
-            {
-                ReqlFunction1 filter = expr => expr["isLive"].Eq(false);
-                filterSerialized = ReqlRaw.ToRawString(filter);
-            }
-            var filterExpr = ReqlRaw.FromRawString(filterSerialized);
+                var keys = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Run(_rethinkDbConnection);
+                DateTime startDate;
+                DateTime endDate;
+                Cursor<object> vehicles;
+                string filterSerialized = string.Empty;
+                VehicleResponse oVehicleResponse = new VehicleResponse();
 
-            if (!string.IsNullOrEmpty(Convert.ToString(model.startAt)) && !string.IsNullOrEmpty(Convert.ToString(model.endAt)) && DateTime.TryParse(Convert.ToString(model.startAt), out startDate) && DateTime.TryParse(Convert.ToString(model.endAt), out endDate))
-            {
-                ReqlFunction1 filterForStartDate = expr => expr["timestamp"].Ge(startDate);
-                string filterSerializedForStartDate = ReqlRaw.ToRawString(filterForStartDate);
-                var filterExprForStartDate = ReqlRaw.FromRawString(filterSerializedForStartDate);
-
-                ReqlFunction1 filterForEndDate = expr => expr["timestamp"].Le(endDate);
-                string filterSerializedForEndDate = ReqlRaw.ToRawString(filterForEndDate);
-                var filterExprForEndDate = ReqlRaw.FromRawString(filterSerializedForEndDate);
-
-                vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExpr).Filter(filterForStartDate).Filter(filterForEndDate).Run(_rethinkDbConnection);
-            }
-            else
-            {
-                vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExpr).Run(_rethinkDbConnection);
-            }
-
-
-            List<VehicleDetails> listVehicles = new List<VehicleDetails>();
-            List<CoordinatesDetail> listCoordinates = new List<CoordinatesDetail>();
-
-            foreach (var vehicle in vehicles)
-            {
-                string VehicleId = string.Empty, institutionId = string.Empty, DeviceId = string.Empty;
-                foreach (var value in JObject.Parse(vehicle.ToString()).Children())
+                if (model.status == "active")
                 {
+                    ReqlFunction1 filter = expr => expr["isLive"].Eq(true);
+                    filterSerialized = ReqlRaw.ToRawString(filter);
+                }
+                else
+                {
+                    ReqlFunction1 filter = expr => expr["isLive"].Eq(false);
+                    filterSerialized = ReqlRaw.ToRawString(filter);
+                }
+                var filterExpr = ReqlRaw.FromRawString(filterSerialized);
 
-                    if (((Newtonsoft.Json.Linq.JProperty)value).Name.ToString() == "id")
+                if (!string.IsNullOrEmpty(Convert.ToString(model.startAt)) && !string.IsNullOrEmpty(Convert.ToString(model.endAt)) && DateTime.TryParse(Convert.ToString(model.startAt), out startDate) && DateTime.TryParse(Convert.ToString(model.endAt), out endDate))
+                {
+                    ReqlFunction1 filterForStartDate = expr => expr["timestamp"].Ge(startDate);
+                    string filterSerializedForStartDate = ReqlRaw.ToRawString(filterForStartDate);
+                    var filterExprForStartDate = ReqlRaw.FromRawString(filterSerializedForStartDate);
+
+                    ReqlFunction1 filterForEndDate = expr => expr["timestamp"].Le(endDate);
+                    string filterSerializedForEndDate = ReqlRaw.ToRawString(filterForEndDate);
+                    var filterExprForEndDate = ReqlRaw.FromRawString(filterSerializedForEndDate);
+
+                    vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExpr).Filter(filterForStartDate).Filter(filterForEndDate).Run(_rethinkDbConnection);
+                }
+                else
+                {
+                    vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExpr).Run(_rethinkDbConnection);
+                }
+
+                List<VehicleDetails> listVehicles = new List<VehicleDetails>();
+                List<CoordinatesDetail> listCoordinates = new List<CoordinatesDetail>();
+
+                int totalCount = 0;
+                foreach (var vehicle in vehicles)
+                {
+                    totalCount++;
+                    string VehicleId = string.Empty, institutionId = string.Empty, DeviceId = string.Empty;
+                    foreach (var value in JObject.Parse(vehicle.ToString()).Children())
                     {
-                        ReqlFunction1 cordinatefilter = expr => expr["mobileId"].Eq(((Newtonsoft.Json.Linq.JProperty)value).Value.ToString());
-                        string cordinatefilterSerialized = ReqlRaw.ToRawString(cordinatefilter);
-                        var cordinatefilterExpr = ReqlRaw.FromRawString(cordinatefilterSerialized);
-                        Cursor<object> coordinates = _rethinkDbSingleton.Db(DATABASE_NAME).Table(CORDINATE_TABLE_NAME).Filter(cordinatefilterExpr).Run(_rethinkDbConnection);
 
-                        foreach (var coordinate in coordinates)
+                        if (((JProperty)value).Name.ToString() == "id")
                         {
-                            string latitude = string.Empty, longitude = string.Empty, timestamp = string.Empty;
-                            foreach (var cordinatevalue in JObject.Parse(coordinate.ToString()).Children())
+                            ReqlFunction1 cordinatefilter = expr => expr["mobileId"].Eq(((JProperty)value).Value.ToString());
+                            string cordinatefilterSerialized = ReqlRaw.ToRawString(cordinatefilter);
+                            var cordinatefilterExpr = ReqlRaw.FromRawString(cordinatefilterSerialized);
+                            Cursor<object> coordinates = _rethinkDbSingleton.Db(DATABASE_NAME).Table(CORDINATE_TABLE_NAME).Filter(cordinatefilterExpr).Run(_rethinkDbConnection);
+
+                            foreach (var coordinate in coordinates)
                             {
+                                string latitude = string.Empty, longitude = string.Empty, timestamp = string.Empty;
+                                foreach (var cordinatevalue in JObject.Parse(coordinate.ToString()).Children())
+                                {
 
-                                if (((Newtonsoft.Json.Linq.JProperty)cordinatevalue).Name.ToString() == "latitude")
-                                {
-                                    latitude = ((Newtonsoft.Json.Linq.JProperty)cordinatevalue).Value.ToString();
-                                }
-                                else if (((Newtonsoft.Json.Linq.JProperty)cordinatevalue).Name.ToString() == "longitude")
-                                {
-                                    longitude = ((Newtonsoft.Json.Linq.JProperty)cordinatevalue).Value.ToString();
-                                }
-                                else if (((Newtonsoft.Json.Linq.JProperty)cordinatevalue).Name.ToString() == "timestamp")
-                                {
-                                    var epocTime = ((Newtonsoft.Json.Linq.JProperty)cordinatevalue).Value.ToString();
-                                    foreach (var timestampVal in JObject.Parse(epocTime).Children())
+                                    if (((JProperty)cordinatevalue).Name.ToString() == "latitude")
                                     {
-                                        if (((Newtonsoft.Json.Linq.JProperty)timestampVal).Name.ToString() == "epoch_time")
+                                        latitude = ((JProperty)cordinatevalue).Value.ToString();
+                                    }
+                                    else if (((JProperty)cordinatevalue).Name.ToString() == "longitude")
+                                    {
+                                        longitude = ((JProperty)cordinatevalue).Value.ToString();
+                                    }
+                                    else if (((JProperty)cordinatevalue).Name.ToString() == "timestamp")
+                                    {
+                                        var epocTime = ((JProperty)cordinatevalue).Value.ToString();
+                                        foreach (var timestampVal in JObject.Parse(epocTime).Children())
                                         {
-                                            var UnixTime = ((Newtonsoft.Json.Linq.JProperty)timestampVal).Value.ToString();
+                                            if (((JProperty)timestampVal).Name.ToString() == "epoch_time")
+                                            {
+                                                var UnixTime = ((JProperty)timestampVal).Value.ToString();
 
-                                            System.DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
-                                            timestamp = dateTime.AddSeconds(Convert.ToDouble(UnixTime)).ToLocalTime().ToString();
-                                            break;
+                                                System.DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
+                                                timestamp = dateTime.AddSeconds(Convert.ToDouble(UnixTime)).ToLocalTime().ToString();
+                                                break;
+                                            }
                                         }
                                     }
+                                    else if (((JProperty)cordinatevalue).Name.ToString() == "deviceId")
+                                    {
+                                        DeviceId = ((JProperty)cordinatevalue).Value.ToString();
+                                    }
                                 }
-                                else if (((Newtonsoft.Json.Linq.JProperty)cordinatevalue).Name.ToString() == "deviceId")
+                                listCoordinates.Add(new CoordinatesDetail
                                 {
-                                    DeviceId = ((Newtonsoft.Json.Linq.JProperty)cordinatevalue).Value.ToString();
-                                }
+                                    latitude = Convert.ToDouble(latitude),
+                                    longitude = Convert.ToDouble(longitude),
+                                    timestamp = timestamp
+                                });
                             }
-                            listCoordinates.Add(new CoordinatesDetail
-                            {
-                                latitude = Convert.ToDouble(latitude),
-                                longitude = Convert.ToDouble(longitude),
-                                timestamp = timestamp
-                            });
+                        }
+                        else if (((JProperty)value).Name.ToString() == "vehicleId")
+                        {
+                            VehicleId = ((JProperty)value).Value.ToString();
+                        }
+                        else if (((JProperty)value).Name.ToString() == "institutionId")
+                        {
+                            institutionId = ((JProperty)value).Value.ToString();
                         }
                     }
-                    else if (((Newtonsoft.Json.Linq.JProperty)value).Name.ToString() == "vehicleId")
-                    {
-                        VehicleId = ((Newtonsoft.Json.Linq.JProperty)value).Value.ToString();
-                    }
-                    else if (((Newtonsoft.Json.Linq.JProperty)value).Name.ToString() == "institutionId")
-                    {
-                        institutionId = ((Newtonsoft.Json.Linq.JProperty)value).Value.ToString();
-                    }
-                }
-                listVehicles.Add(new VehicleDetails
-                {
-                    deviceId = DeviceId,
-                    vehicleId = VehicleId,
-                    institutionId = institutionId,
-                    coordinates = listCoordinates
-                });
-            }
-            if (listVehicles == null || listVehicles.Count == 0)
-            {
-                oVehicleResponse.Status = false;
-                oVehicleResponse.Message = "Vehicle does not exists in database.";
-                oVehicleResponse.responseCode = ResponseCode.NotFound;
-                oVehicleResponse.Data = null;
-                return oVehicleResponse;
-            }
 
-            oVehicleResponse.Status = true;
-            oVehicleResponse.Message = "Success";
-            oVehicleResponse.responseCode = ResponseCode.Success;
-            oVehicleResponse.Data = listVehicles;
-            return oVehicleResponse;
+                    listVehicles.Add(new VehicleDetails
+                    {
+                        deviceId = DeviceId,
+                        vehicleId = VehicleId,
+                        institutionId = institutionId,
+                        coordinates = listCoordinates
+                    });
+                }
+
+                var page = new Pagination
+                {
+                    offset = pageInfo.offset,
+                    limit = pageInfo.limit,
+                    total = totalCount
+                };
+
+                if (listVehicles == null || listVehicles.Count == 0)
+                    return ReturnResponse.ErrorResponse("Vehicle not found.", StatusCodes.Status404NotFound);
+
+                oVehicleResponse.status = true;
+                oVehicleResponse.message = "Vehicle retrived successfully.";
+                oVehicleResponse.statusCode = StatusCodes.Status200OK;
+                oVehicleResponse.pagination = page;
+                oVehicleResponse.data = listVehicles;
+                return oVehicleResponse;
+
+            }
+            catch (Exception ex)
+            {
+                return ReturnResponse.ExceptionResponse(ex);
+            }
         }
 
         public string GetInstitutionId(string mobileId)
@@ -382,9 +391,9 @@ namespace TrackService.RethinkDb_Changefeed
 
             foreach (var elements in vehicle)
             {
-                if (((Newtonsoft.Json.Linq.JProperty)elements).Name == "institutionId")
+                if (((JProperty)elements).Name == "institutionId")
                 {
-                    institutionId = ((Newtonsoft.Json.Linq.JProperty)elements).Value.ToString();
+                    institutionId = ((JProperty)elements).Value.ToString();
                     break;
                 }
             }
@@ -470,26 +479,26 @@ namespace TrackService.RethinkDb_Changefeed
                 {
                     foreach (var value in JObject.Parse(coordinate.ToString()).Children())
                     {
-                        if (((Newtonsoft.Json.Linq.JProperty)value).Name.ToString() == "id")
+                        if (((JProperty)value).Name.ToString() == "id")
                         {
-                            CoordinateId = ((Newtonsoft.Json.Linq.JProperty)value).Value.ToString();
+                            CoordinateId = ((JProperty)value).Value.ToString();
                         }
-                        if (((Newtonsoft.Json.Linq.JProperty)value).Name.ToString() == "latitude")
+                        if (((JProperty)value).Name.ToString() == "latitude")
                         {
-                            latitude = Convert.ToDouble(((Newtonsoft.Json.Linq.JProperty)value).Value.ToString());
+                            latitude = Convert.ToDouble(((JProperty)value).Value.ToString());
                         }
-                        else if (((Newtonsoft.Json.Linq.JProperty)value).Name.ToString() == "longitude")
+                        else if (((JProperty)value).Name.ToString() == "longitude")
                         {
-                            longitude = Convert.ToDouble(((Newtonsoft.Json.Linq.JProperty)value).Value.ToString());
+                            longitude = Convert.ToDouble(((JProperty)value).Value.ToString());
                         }
-                        else if (((Newtonsoft.Json.Linq.JProperty)value).Name.ToString() == "timestamp")
+                        else if (((JProperty)value).Name.ToString() == "timestamp")
                         {
-                            var epocTime = ((Newtonsoft.Json.Linq.JProperty)value).Value.ToString();
+                            var epocTime = ((JProperty)value).Value.ToString();
                             foreach (var timestampVal in JObject.Parse(epocTime).Children())
                             {
-                                if (((Newtonsoft.Json.Linq.JProperty)timestampVal).Name.ToString() == "epoch_time")
+                                if (((JProperty)timestampVal).Name.ToString() == "epoch_time")
                                 {
-                                    var UnixTime = ((Newtonsoft.Json.Linq.JProperty)timestampVal).Value.ToString();
+                                    var UnixTime = ((JProperty)timestampVal).Value.ToString();
 
                                     System.DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
                                     timestamp = dateTime.AddSeconds(Convert.ToDouble(UnixTime)).ToLocalTime();
@@ -497,18 +506,18 @@ namespace TrackService.RethinkDb_Changefeed
                                 }
                             }
                         }
-                        else if (((Newtonsoft.Json.Linq.JProperty)value).Name.ToString() == "deviceId")
+                        else if (((JProperty)value).Name.ToString() == "deviceId")
                         {
-                            deviceId = Convert.ToInt32(((Newtonsoft.Json.Linq.JProperty)value).Value.ToString());
+                            deviceId = Convert.ToInt32(((JProperty)value).Value.ToString());
                         }
-                        else if (((Newtonsoft.Json.Linq.JProperty)value).Name.ToString() == "mobileId")
+                        else if (((JProperty)value).Name.ToString() == "mobileId")
                         {
-                            var vehicle = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Get(((Newtonsoft.Json.Linq.JProperty)value).Value.ToString()).Run(_rethinkDbConnection);
+                            var vehicle = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Get(((JProperty)value).Value.ToString()).Run(_rethinkDbConnection);
                             foreach (var elements in vehicle)
                             {
-                                if (((Newtonsoft.Json.Linq.JProperty)elements).Name == "vehicleId")
+                                if (((JProperty)elements).Name == "vehicleId")
                                 {
-                                    vehicleId = Convert.ToInt32(((Newtonsoft.Json.Linq.JProperty)elements).Value.ToString());
+                                    vehicleId = Convert.ToInt32(((JProperty)elements).Value.ToString());
                                     break;
                                 }
                             }
@@ -586,9 +595,9 @@ namespace TrackService.RethinkDb_Changefeed
 
             foreach (var elements in vehicle)
             {
-                if (((Newtonsoft.Json.Linq.JProperty)elements).Name == "vehicleId")
+                if (((JProperty)elements).Name == "vehicleId")
                 {
-                    vehicleId = ((Newtonsoft.Json.Linq.JProperty)elements).Value.ToString();
+                    vehicleId = ((JProperty)elements).Value.ToString();
                     break;
                 }
             }
