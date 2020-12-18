@@ -31,5 +31,15 @@
     <ProjectReference Include="..\TrackService.RethinkDb_Changefeed\TrackService.RethinkDb_Changefeed.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="SharedBin\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Obfuscation">
+      <HintPath>SharedBin\Obfuscation.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
 
 </Project>
