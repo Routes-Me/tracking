@@ -47,7 +47,7 @@ namespace TrackService.Helper
                         var deviceIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdEncryption(Convert.ToInt32(DeviceId));
                         var json = "{\"vehicleId\": \"" + vehicleIdDecrypted + "\",\"institutionId\": \"" + institutionIdDecrypted + "\",\"deviceId\": \"" + deviceIdDecrypted + "\",\"coordinates\": {\"latitude\": \"" + Latitude + "\", \"longitude\": \"" + Longitude + "\",\"timestamp\": \"" + timestamp + "\"}}";
                         trackServiceHub = new TrackServiceHub();
-                        await Task.Run(() => { trackServiceHub.SendDataToDashboard(_hubContext, institutionIdDecrypted, vehicleIdDecrypted, json); }).ConfigureAwait(true); // To send data to all subscribe vehicled for admin
+                        await Task.Run(() => { trackServiceHub.SendDataToDashboard(_hubContext, _coordinateChangeFeedbackBackgroundService, institutionIdDecrypted, vehicleIdDecrypted, json); }).ConfigureAwait(true); // To send data to all subscribe vehicled for admin
                     }
                 }
             }

@@ -69,95 +69,17 @@ namespace TrackService
         {
             try
             {
-                string Application = string.Empty, Privilege = string.Empty, TokenInstitutionId = string.Empty;
-                var user = Context.User;
-                foreach (var item in user.Claims)
-                {
-                    if (item.Type.ToLower() == "roles")
-                    {
-                        var rolesItem = item.Value.Replace("[", "").Replace("]", "").Replace("\"", "").Replace("{", "").Replace("}", "");
-                        var mainSplit = rolesItem.Split(',');
-                        var appSplit = mainSplit[0].Split(':');
-                        var prevSplit = mainSplit[1].Split(':');
-                        Application = appSplit[1];
-                        Privilege = prevSplit[1];
-                    }
-                    if (item.Type.ToLower() == "institutionid")
-                    {
-                        TokenInstitutionId = item.Value;
-                    }
-                }
                 if (!string.IsNullOrEmpty(InstitutionId))
                 {
-                    if (TokenInstitutionId == InstitutionId)
-                    {
-                        int institutionIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(InstitutionId);
-                        if (institutionIdDecrypted > 0)
-                        {
-                            if (_coordinateChangeFeedbackBackgroundService.CheckInstitutionExists(institutionIdDecrypted.ToString()))
-                            {
-                                _institutions.Add(institutionIdDecrypted.ToString(), Context.ConnectionId);
-                                return;
-                            }
-                            else
-                            {
-                                await Clients.Client(Context.ConnectionId).SendAsync("CommonMessage", "{ \"code\":\"101\", \"message\":\"Institution does not exists!\" }");
-                                return;
-                            }
-                        }
-                        else
-                        {
-                            await Clients.Client(Context.ConnectionId).SendAsync("CommonMessage", "{ \"code\":\"102\", \"message\":\"Bad request value. Invalid InstitutionId!\" }");
-                            return;
-                        }
-                    }
-                    else
-                    {
-                        bool isSuperInstitutions = _coordinateChangeFeedbackBackgroundService.SuperInstitutions(TokenInstitutionId);
-                        if (isSuperInstitutions)
-                        {
-                            _all.Add(All, Context.ConnectionId);
-                        }
-                        else
-                        {
-                            await Clients.Client(Context.ConnectionId).SendAsync("CommonMessage", "{ \"code\":\"103\", \"message\":\"You are not allowed to subscribe to " + InstitutionId + "!\" }");
-                            return;
-                        }
-                    }
+                    SubscribeInstitution(InstitutionId);
                 }
                 else if (!string.IsNullOrEmpty(VehicleId))
                 {
-                    int vehicleIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(VehicleId);
-                    if (vehicleIdDecrypted > 0)
-                    {
-                        if (_coordinateChangeFeedbackBackgroundService.CheckVehicleExists(vehicleIdDecrypted.ToString()))
-                        {
-                            _vehicles.Add(vehicleIdDecrypted.ToString(), Context.ConnectionId);
-                            return;
-                        }
-                        else
-                        {
-                            await Clients.Client(Context.ConnectionId).SendAsync("CommonMessage", "{ \"code\":\"104\", \"message\":\"Vehicle does not exists!\" }");
-                            return;
-                        }
-                    }
-                    else
-                    {
-                        await Clients.Client(Context.ConnectionId).SendAsync("CommonMessage", "{ \"code\":\"105\", \"message\":\"Bad request value. Invalid VehicleId!\" }");
-                        return;
-                    }
+                    SubscribeVehicle(VehicleId);
                 }
                 else if (!string.IsNullOrEmpty(All) && All.Equals("--all"))
                 {
-                    if (Application.ToLower() == "dashboard" && Privilege.ToLower() == "super")
-                    {
-                        _all.Add(All, Context.ConnectionId);
-                    }
-                    else
-                    {
-                        await Clients.Client(Context.ConnectionId).SendAsync("CommonMessage", "{ \"code\":\"106\", \"message\":\"You are not allowed to subscribe! \" }");
-                        return;
-                    }
+                    SubscribeAll(All);
                 }
                 else
                 {
@@ -167,21 +89,19 @@ namespace TrackService
             }
             catch (Exception ex)
             {
-                await Clients.Client(Context.ConnectionId).SendAsync("CommonMessage", "{ \"code\":\"108\", \"message\":\" " + ex.Message + "!\" }");
+                await Clients.Client(Context.ConnectionId).SendAsync("CommonMessage", ex.Message);
                 return;
             }
         }
 
-
-
-        public void Unsubscribe() // Subscribe All Vehicle Data For Particular Institution
+        public void Unsubscribe() 
         {
             _all.RemoveAll(Context.ConnectionId);
             _institutions.RemoveAll(Context.ConnectionId);
             _vehicles.RemoveAll(Context.ConnectionId);
         }
 
-        public async void SendDataToDashboard(IHubContext<TrackServiceHub> context, string institutionId, string vehicleId, string json)
+        public async void SendDataToDashboard(IHubContext<TrackServiceHub> context, ICoordinateChangeFeedbackBackgroundService _coordinateChangeFeedbackBackgroundService, string institutionId, string vehicleId, string json)
         {
             int institutionIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(institutionId);
             int vehicleIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(vehicleId);
@@ -258,5 +178,99 @@ namespace TrackService
             await base.OnDisconnectedAsync(ex);
         }
 
+        private void SubscribeInstitution(string InstitutionId)
+        {
+            var claimData = GetUserClaimsData();
+            if (claimData.TokenInstitutionId == InstitutionId)
+            {
+                int institutionIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(InstitutionId);
+                if (institutionIdDecrypted > 0)
+                {
+                    if (_coordinateChangeFeedbackBackgroundService.CheckInstitutionExists(institutionIdDecrypted.ToString()))
+                    {
+                        _institutions.Add(institutionIdDecrypted.ToString(), Context.ConnectionId);
+                        return;
+                    }
+                    else
+                    {
+                        throw new Exception("{ \"code\":\"101\", \"message\":\"Institution does not exists!\" }");
+                    }
+                }
+                else
+                {
+                    throw new Exception("{ \"code\":\"102\", \"message\":\"Bad request value. Invalid InstitutionId!\" }");
+                }
+            }
+            else
+            {
+                bool isSuperInstitutions = _coordinateChangeFeedbackBackgroundService.SuperInstitutions(claimData.TokenInstitutionId);
+                if (isSuperInstitutions)
+                {
+                    string All = "--all";
+                    _all.Add(All, Context.ConnectionId);
+                }
+                else
+                {
+                    throw new Exception("{ \"code\":\"103\", \"message\":\"You are not allowed to subscribe to " + InstitutionId + "!\" }");
+                }
+            }
+        }
+
+        private void SubscribeVehicle(string VehicleId)
+        {
+            int vehicleIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(VehicleId);
+            if (vehicleIdDecrypted > 0)
+            {
+                if (_coordinateChangeFeedbackBackgroundService.CheckVehicleExists(vehicleIdDecrypted.ToString()))
+                {
+                    _vehicles.Add(vehicleIdDecrypted.ToString(), Context.ConnectionId);
+                    return;
+                }
+                else
+                {
+                    throw new Exception("{ \"code\":\"104\", \"message\":\"Vehicle does not exists!\" }");
+                }
+            }
+            else
+            {
+                throw new Exception("{ \"code\":\"105\", \"message\":\"Bad request value. Invalid VehicleId!\" }");
+            }
+        }
+
+        private void SubscribeAll(string All)
+        {
+            var claimData = GetUserClaimsData();
+            if (claimData.Application.ToLower() == "dashboard" && claimData.Privilege.ToLower() == "super")
+            {
+                _all.Add(All, Context.ConnectionId);
+            }
+            else
+            {
+                throw new Exception("{ \"code\":\"106\", \"message\":\"You are not allowed to subscribe! \" }");
+            }
+        }
+
+        private UserClaimsData GetUserClaimsData()
+        {
+            UserClaimsData userClaimsData = new UserClaimsData();
+            var user = Context.User;
+            foreach (var item in user.Claims)
+            {
+                if (item.Type.ToLower() == "roles")
+                {
+                    var rolesItem = item.Value.Replace("[", "").Replace("]", "").Replace("\"", "").Replace("{", "").Replace("}", "");
+                    var mainSplit = rolesItem.Split(',');
+                    var appSplit = mainSplit[0].Split(':');
+                    var prevSplit = mainSplit[1].Split(':');
+                    userClaimsData.Application = appSplit[1];
+                    userClaimsData.Privilege = prevSplit[1];
+                }
+                if (item.Type.ToLower() == "institutionid")
+                {
+                    userClaimsData.TokenInstitutionId = item.Value;
+                }
+            }
+            return userClaimsData;
+        }
     }
 }
