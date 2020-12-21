@@ -17,4 +17,10 @@
     <ProjectReference Include="..\TrackService.RethinkDb_Abstractions\TrackService.RethinkDb_Abstractions.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Reference Include="Obfuscation">
+      <HintPath>..\TrackService\SharedBin\Obfuscation.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
 </Project>

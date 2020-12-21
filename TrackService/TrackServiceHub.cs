@@ -10,10 +10,15 @@ using Microsoft.AspNetCore.Authorization;
 using Obfuscation;
 using TrackService.RethinkDb_Changefeed.Model.Common;
 using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Newtonsoft.Json;
+using System.Security.Claims;
+using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
 
 namespace TrackService
 {
-    [Authorize]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public class TrackServiceHub : Hub
     {
         public readonly static ConnectionMapping<string> _connections = new ConnectionMapping<string>();
@@ -25,21 +30,15 @@ namespace TrackService
         public readonly static VehicleID<string> _vehiclesId = new VehicleID<string>();
         public readonly static DevicesId<string> _deviceId = new DevicesId<string>();
 
-        private readonly AppSettings _appSettings;
-
-        public readonly static int PrimeInverse = 59260789;
-        public readonly static int Prime = 1580030173;
-
         private readonly ICoordinateChangeFeedbackBackgroundService _coordinateChangeFeedbackBackgroundService;
 
         public TrackServiceHub()
         {
         }
 
-        public TrackServiceHub(ICoordinateChangeFeedbackBackgroundService coordinateChangeFeedbackBackgroundService, IOptions<AppSettings> appSettings)
+        public TrackServiceHub(ICoordinateChangeFeedbackBackgroundService coordinateChangeFeedbackBackgroundService)
         {
             _coordinateChangeFeedbackBackgroundService = coordinateChangeFeedbackBackgroundService;
-            _appSettings = appSettings.Value;
         }
 
         public async void SendLocation(string locations)
@@ -68,72 +67,44 @@ namespace TrackService
 
         public async void Subscribe(string InstitutionId, string VehicleId, string All)
         {
-            if (!string.IsNullOrEmpty(InstitutionId))
+            try
             {
-                var institutionIdDecrypted = ObfuscationClass.DecodeId(Convert.ToInt32(InstitutionId), PrimeInverse);
-                if (institutionIdDecrypted > 0)
+                if (!string.IsNullOrEmpty(InstitutionId))
                 {
-                    if (_coordinateChangeFeedbackBackgroundService.CheckInstitutionExists(institutionIdDecrypted.ToString()))
-                    {
-                        _institutions.Add(institutionIdDecrypted.ToString(), Context.ConnectionId);
-                        return;
-                    }
-                    else
-                    {
-                        await Clients.Client(Context.ConnectionId).SendAsync("CommonMessage", "{ \"code\":\"101\", \"message\":\"Institution does not exists!\" }");
-                        return;
-                    }
+                    SubscribeInstitution(InstitutionId);
+                }
+                else if (!string.IsNullOrEmpty(VehicleId))
+                {
+                    SubscribeVehicle(VehicleId);
+                }
+                else if (!string.IsNullOrEmpty(All) && All.Equals("--all"))
+                {
+                    SubscribeAll(All);
                 }
                 else
                 {
-                    await Clients.Client(Context.ConnectionId).SendAsync("CommonMessage", "{ \"code\":\"103\", \"message\":\"Bad request value. Invalid InstitutionId!\" }");
+                    await Clients.Client(Context.ConnectionId).SendAsync("CommonMessage", "{ \"code\":\"107\", \"message\":\"Please provide atleast one parameter!\" }");
                     return;
                 }
             }
-            else if (!string.IsNullOrEmpty(VehicleId))
+            catch (Exception ex)
             {
-                var vehicleIdDecrypted = ObfuscationClass.DecodeId(Convert.ToInt32(VehicleId), PrimeInverse);
-                if (vehicleIdDecrypted > 0)
-                {
-                    if (_coordinateChangeFeedbackBackgroundService.CheckVehicleExists(vehicleIdDecrypted.ToString()))
-                    {
-                        _vehicles.Add(vehicleIdDecrypted.ToString(), Context.ConnectionId);
-                        return;
-                    }
-                    else
-                    {
-                        await Clients.Client(Context.ConnectionId).SendAsync("CommonMessage", "{ \"code\":\"101\", \"message\":\"Vehicle does not exists!\" }");
-                        return;
-                    }
-                }
-                else
-                {
-                    await Clients.Client(Context.ConnectionId).SendAsync("CommonMessage", "{ \"code\":\"103\", \"message\":\"Bad request value. Invalid VehicleId!\" }");
-                    return;
-                }
-            }
-            else if (!string.IsNullOrEmpty(All) && All.Equals("--all"))
-            {
-                _all.Add(All, Context.ConnectionId);
-            }
-            else
-            {
-                await Clients.Client(Context.ConnectionId).SendAsync("CommonMessage", "{ \"code\":\"105\", \"message\":\"Please provide atleast one parameter!\" }");
+                await Clients.Client(Context.ConnectionId).SendAsync("CommonMessage", ex.Message);
                 return;
             }
         }
 
-        public void Unsubscribe() // Subscribe All Vehicle Data For Particular Institution
+        public void Unsubscribe() 
         {
             _all.RemoveAll(Context.ConnectionId);
             _institutions.RemoveAll(Context.ConnectionId);
             _vehicles.RemoveAll(Context.ConnectionId);
         }
 
-        public async void SendDataToDashboard(IHubContext<TrackServiceHub> context, string institutionId, string vehicleId, string json)
+        public async void SendDataToDashboard(IHubContext<TrackServiceHub> context, ICoordinateChangeFeedbackBackgroundService _coordinateChangeFeedbackBackgroundService, string institutionId, string vehicleId, string json)
         {
-            var institutionIdDecrypted = ObfuscationClass.DecodeId(Convert.ToInt32(institutionId), PrimeInverse);
-            var vehicleIdDecrypted = ObfuscationClass.DecodeId(Convert.ToInt32(vehicleId), PrimeInverse);
+            int institutionIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(institutionId);
+            int vehicleIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(vehicleId);
 
             // Send data to ReceiveAll screen
             await context.Clients.All.SendAsync("ReceiveAllData", json);
@@ -165,26 +136,27 @@ namespace TrackService
                 var vehicleId = Context.GetHttpContext().Request.Query["vehicleId"].ToString();
                 var deviceId = Context.GetHttpContext().Request.Query["deviceId"].ToString();
 
-                var institutionIdDecrypted = ObfuscationClass.DecodeId(Convert.ToInt32(institutionId), PrimeInverse);
-                var vehicleIdDecrypted = ObfuscationClass.DecodeId(Convert.ToInt32(vehicleId), PrimeInverse);
-                var deviceIdDecrypted = ObfuscationClass.DecodeId(Convert.ToInt32(deviceId), PrimeInverse);
-
-
-                _deviceId.Add(Context.ConnectionId, deviceIdDecrypted.ToString());
-                _vehiclesId.Add(Context.ConnectionId, vehicleIdDecrypted.ToString());
-                _institutionsId.Add(Context.ConnectionId, institutionIdDecrypted.ToString());
-
-                if (!string.IsNullOrEmpty(institutionId.ToString()) && !string.IsNullOrEmpty(vehicleId.ToString()))
+                if (!string.IsNullOrEmpty(institutionId) && !string.IsNullOrEmpty(vehicleId) && !string.IsNullOrEmpty(deviceId))
                 {
-                    await _coordinateChangeFeedbackBackgroundService.InsertMobiles(new MobilesModel
+                    int institutionIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(institutionId);
+                    int vehicleIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(vehicleId);
+                    int deviceIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(deviceId);
+
+                    _deviceId.Add(Context.ConnectionId, deviceIdDecrypted.ToString());
+                    _vehiclesId.Add(Context.ConnectionId, vehicleIdDecrypted.ToString());
+                    _institutionsId.Add(Context.ConnectionId, institutionIdDecrypted.ToString());
+
+                    if (!string.IsNullOrEmpty(institutionId.ToString()) && !string.IsNullOrEmpty(vehicleId.ToString()))
                     {
-                        institutionId = institutionIdDecrypted,
-                        vehicleId = vehicleIdDecrypted,
-                        timestamp = DateTime.UtcNow.ToString()
-                    });
+                        await _coordinateChangeFeedbackBackgroundService.InsertMobiles(new MobilesModel
+                        {
+                            institutionId = institutionIdDecrypted,
+                            vehicleId = vehicleIdDecrypted,
+                            timestamp = DateTime.UtcNow.ToString()
+                        });
+                    }
                 }
             }
-
             await base.OnConnectedAsync();
         }
 
@@ -194,7 +166,7 @@ namespace TrackService
             if (!string.IsNullOrEmpty(Context.GetHttpContext().Request.Query["vehicleId"]))
             {
                 var vehicleId = Context.GetHttpContext().Request.Query["vehicleId"].ToString();
-                var vehicleIdDecrypted = ObfuscationClass.DecodeId(Convert.ToInt32(vehicleId), PrimeInverse);
+                int vehicleIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(vehicleId);
                 _coordinateChangeFeedbackBackgroundService.ChangeVehicleStatus(vehicleIdDecrypted.ToString());
             }
             _all.RemoveAll(Context.ConnectionId);
@@ -204,6 +176,101 @@ namespace TrackService
             _vehiclesId.Remove(Context.ConnectionId);
             _institutionsId.Remove(Context.ConnectionId);
             await base.OnDisconnectedAsync(ex);
+        }
+
+        private void SubscribeInstitution(string InstitutionId)
+        {
+            var claimData = GetUserClaimsData();
+            if (claimData.TokenInstitutionId == InstitutionId)
+            {
+                int institutionIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(InstitutionId);
+                if (institutionIdDecrypted > 0)
+                {
+                    if (_coordinateChangeFeedbackBackgroundService.CheckInstitutionExists(institutionIdDecrypted.ToString()))
+                    {
+                        _institutions.Add(institutionIdDecrypted.ToString(), Context.ConnectionId);
+                        return;
+                    }
+                    else
+                    {
+                        throw new Exception("{ \"code\":\"101\", \"message\":\"Institution does not exists!\" }");
+                    }
+                }
+                else
+                {
+                    throw new Exception("{ \"code\":\"102\", \"message\":\"Bad request value. Invalid InstitutionId!\" }");
+                }
+            }
+            else
+            {
+                bool isSuperInstitutions = _coordinateChangeFeedbackBackgroundService.SuperInstitutions(claimData.TokenInstitutionId);
+                if (isSuperInstitutions)
+                {
+                    string All = "--all";
+                    _all.Add(All, Context.ConnectionId);
+                }
+                else
+                {
+                    throw new Exception("{ \"code\":\"103\", \"message\":\"You are not allowed to subscribe to " + InstitutionId + "!\" }");
+                }
+            }
+        }
+
+        private void SubscribeVehicle(string VehicleId)
+        {
+            int vehicleIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(VehicleId);
+            if (vehicleIdDecrypted > 0)
+            {
+                if (_coordinateChangeFeedbackBackgroundService.CheckVehicleExists(vehicleIdDecrypted.ToString()))
+                {
+                    _vehicles.Add(vehicleIdDecrypted.ToString(), Context.ConnectionId);
+                    return;
+                }
+                else
+                {
+                    throw new Exception("{ \"code\":\"104\", \"message\":\"Vehicle does not exists!\" }");
+                }
+            }
+            else
+            {
+                throw new Exception("{ \"code\":\"105\", \"message\":\"Bad request value. Invalid VehicleId!\" }");
+            }
+        }
+
+        private void SubscribeAll(string All)
+        {
+            var claimData = GetUserClaimsData();
+            if (claimData.Application.ToLower() == "dashboard" && claimData.Privilege.ToLower() == "super")
+            {
+                _all.Add(All, Context.ConnectionId);
+            }
+            else
+            {
+                throw new Exception("{ \"code\":\"106\", \"message\":\"You are not allowed to subscribe! \" }");
+            }
+        }
+
+        private UserClaimsData GetUserClaimsData()
+        {
+            UserClaimsData userClaimsData = new UserClaimsData();
+            var user = Context.User;
+            foreach (var item in user.Claims)
+            {
+                if (item.Type.ToLower() == "roles")
+                {
+                    var rolesItem = item.Value.Replace("[", "").Replace("]", "").Replace("\"", "").Replace("{", "").Replace("}", "");
+                    var mainSplit = rolesItem.Split(',');
+                    var appSplit = mainSplit[0].Split(':');
+                    var prevSplit = mainSplit[1].Split(':');
+                    userClaimsData.Application = appSplit[1];
+                    userClaimsData.Privilege = prevSplit[1];
+                }
+                if (item.Type.ToLower() == "institutionid")
+                {
+                    userClaimsData.TokenInstitutionId = item.Value;
+                }
+            }
+            return userClaimsData;
         }
     }
 }

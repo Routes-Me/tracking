@@ -15,6 +15,7 @@ using System.Net;
 using TrackService.RethinkDb_Changefeed.Model.Common;
 using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Http;
+using Obfuscation;
 
 namespace TrackService.RethinkDb_Changefeed
 {
@@ -603,6 +604,26 @@ namespace TrackService.RethinkDb_Changefeed
             }
             return vehicleId;
 
+        }
+
+        public bool SuperInstitutions(string tokenInstitutionId)
+        {
+            bool isSuperInstitutions = false;
+            foreach (var item in _appSettings.AllowedSuperInstuttions)
+            {
+                if (item == tokenInstitutionId)
+                    isSuperInstitutions = true;
+            }
+            return isSuperInstitutions;
+        }
+
+        public int IdDecryption(string id)
+        {
+            return ObfuscationClass.DecodeId(Convert.ToInt32(id), _appSettings.PrimeInverse);
+        }
+        public string IdEncryption(int id)
+        {
+            return ObfuscationClass.EncodeId(id, _appSettings.Prime).ToString();
         }
     }
 }

@@ -13,8 +13,6 @@ namespace TrackService.Helper
         private readonly ICoordinateChangeFeedbackBackgroundService _coordinateChangeFeedbackBackgroundService;
         private readonly IHubContext<TrackServiceHub> _hubContext;
         TrackServiceHub trackServiceHub;
-        public readonly static int PrimeInverse = 59260789;
-        public readonly static int Prime = 1580030173;
 
         public CoordinateChangeFeedbackBackgroundService(ICoordinateChangeFeedbackBackgroundService coordinateChangeFeedbackBackgroundService, IHubContext<TrackServiceHub> hubContext)
         {
@@ -43,12 +41,13 @@ namespace TrackService.Helper
                         var Latitude = newThreadStats.Split(",")[1].Replace("latitude:", "").Trim();
                         var Longitude = newThreadStats.Split(",")[2].Replace("longitude:", "").Trim();
                         var timestamp = newThreadStats.Split(",")[3].Replace("timestamp:", "").Trim();
-                        var institutionIdDecrypted = ObfuscationClass.EncodeId(Convert.ToInt32(InstitutionId), Prime).ToString();
-                        var vehicleIdDecrypted = ObfuscationClass.EncodeId(Convert.ToInt32(VehicleId), Prime).ToString();
-                        var deviceIdDecrypted = ObfuscationClass.EncodeId(Convert.ToInt32(DeviceId), Prime).ToString();
+
+                        var institutionIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdEncryption(Convert.ToInt32(InstitutionId));
+                        var vehicleIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdEncryption(Convert.ToInt32(VehicleId));
+                        var deviceIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdEncryption(Convert.ToInt32(DeviceId));
                         var json = "{\"vehicleId\": \"" + vehicleIdDecrypted + "\",\"institutionId\": \"" + institutionIdDecrypted + "\",\"deviceId\": \"" + deviceIdDecrypted + "\",\"coordinates\": {\"latitude\": \"" + Latitude + "\", \"longitude\": \"" + Longitude + "\",\"timestamp\": \"" + timestamp + "\"}}";
                         trackServiceHub = new TrackServiceHub();
-                        await Task.Run(() => { trackServiceHub.SendDataToDashboard(_hubContext, institutionIdDecrypted, vehicleIdDecrypted, json); }).ConfigureAwait(true); // To send data to all subscribe vehicled for admin
+                        await Task.Run(() => { trackServiceHub.SendDataToDashboard(_hubContext, _coordinateChangeFeedbackBackgroundService, institutionIdDecrypted, vehicleIdDecrypted, json); }).ConfigureAwait(true); // To send data to all subscribe vehicled for admin
                     }
                 }
             }
