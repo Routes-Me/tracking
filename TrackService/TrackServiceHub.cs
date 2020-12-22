@@ -15,6 +15,7 @@ using Newtonsoft.Json;
 using System.Security.Claims;
 using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
+using Microsoft.AspNetCore.Http;
 
 namespace TrackService
 {
@@ -79,7 +80,7 @@ namespace TrackService
                     }
                     else
                     {
-                        throw new Exception("{ \"code\":\"401\", \"message\":\"You are not allowed to subscribe!\" }");
+                        throw new Exception("{ \"code\":\"" + StatusCodes.Status401Unauthorized + "\", \"message\":\"" + CommonMessage.NotAllowed + "\" }");
                     }
                 }
                 else
@@ -94,7 +95,7 @@ namespace TrackService
                         {
                             SubscribeInstitution(institutionId); // Apply filter for institution for only his institution
                         }
-                        
+
                     }
                     else if (isSuperInstitutions)
                     {
@@ -109,7 +110,7 @@ namespace TrackService
                     }
                     else
                     {
-                        throw new Exception("{ \"code\":\"401\", \"message\":\"You are not allowed to subscribe!\" }");
+                        throw new Exception("{ \"code\":\"" + StatusCodes.Status401Unauthorized + "\", \"message\":\"" + CommonMessage.NotAllowed + "\" }");
                     }
                 }
             }
@@ -206,9 +207,9 @@ namespace TrackService
 
         private void SubscribeInstitution(string institutionId)
         {
-            int institutionIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(institutionId);
-            if (institutionIdDecrypted > 0)
+            if (!string.IsNullOrEmpty(institutionId))
             {
+                int institutionIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(institutionId);
                 if (_coordinateChangeFeedbackBackgroundService.CheckInstitutionExists(institutionIdDecrypted.ToString()))
                 {
                     _institutions.Add(institutionIdDecrypted.ToString(), Context.ConnectionId);
@@ -216,20 +217,20 @@ namespace TrackService
                 }
                 else
                 {
-                    throw new Exception("{ \"code\":\"404\", \"message\":\"Institution does not exists!\" }");
+                    throw new Exception("{ \"code\":\"" + StatusCodes.Status404NotFound + "\", \"message\":\"" + CommonMessage.InstitutionNotFound + "\" }");
                 }
             }
             else
             {
-                throw new Exception("{ \"code\":\"400\", \"message\":\"Bad request value. Invalid InstitutionId!\" }");
+                throw new Exception("{ \"code\":\"" + StatusCodes.Status400BadRequest + "\", \"message\":\"" + CommonMessage.BadRequestForInstitution + "\" }");
             }
         }
 
         private void SubscribeVehicle(string vehicleId)
         {
-            int vehicleIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(vehicleId);
-            if (vehicleIdDecrypted > 0)
+            if (!string.IsNullOrEmpty(vehicleId))
             {
+                int vehicleIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(vehicleId);
                 if (_coordinateChangeFeedbackBackgroundService.CheckVehicleExists(vehicleIdDecrypted.ToString()))
                 {
                     _vehicles.Add(vehicleIdDecrypted.ToString(), Context.ConnectionId);
@@ -237,12 +238,12 @@ namespace TrackService
                 }
                 else
                 {
-                    throw new Exception("{ \"code\":\"404\", \"message\":\"Vehicle does not exists!\" }");
+                    throw new Exception("{ \"code\":\"" + StatusCodes.Status404NotFound + "\", \"message\":\"" + CommonMessage.VehicleNotFound + "\" }");
                 }
             }
             else
             {
-                throw new Exception("{ \"code\":\"400\", \"message\":\"Bad request value. Invalid VehicleId!\" }");
+                throw new Exception("{ \"code\":\"" + StatusCodes.Status400BadRequest + "\", \"message\":\"" + CommonMessage.BadRequestForVehicle + "\" }");
             }
         }
 
@@ -250,11 +251,11 @@ namespace TrackService
         {
             if (string.IsNullOrEmpty(vehicleId))
             {
-                throw new Exception("{ \"code\":\"400\", \"message\":\"Bad request value. Invalid VehicleId!\" }");
+                throw new Exception("{ \"code\":\"" + StatusCodes.Status400BadRequest + "\", \"message\":\"" + CommonMessage.BadRequestForVehicle + "\" }");
             }
             if (string.IsNullOrEmpty(institutionId))
             {
-                throw new Exception("{ \"code\":\"400\", \"message\":\"Bad request value. Invalid InstitutionId!\" }");
+                throw new Exception("{ \"code\":\"" + StatusCodes.Status400BadRequest + "\", \"message\":\"" + CommonMessage.BadRequestForInstitution + "\" }");
             }
 
             int institutionIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(institutionId);
@@ -266,7 +267,7 @@ namespace TrackService
             }
             else
             {
-                throw new Exception("{ \"code\":\"404\", \"message\":\"Vehicle does not exists!\" }");
+                throw new Exception("{ \"code\":\"" + StatusCodes.Status404NotFound + "\", \"message\":\"" + CommonMessage.VehicleNotFound + "\" }");
             }
         }
 
