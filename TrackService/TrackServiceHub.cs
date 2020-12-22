@@ -15,6 +15,7 @@ using Newtonsoft.Json;
 using System.Security.Claims;
 using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
+using Microsoft.AspNetCore.Http;
 
 namespace TrackService
 {
@@ -65,26 +66,52 @@ namespace TrackService
             }
         }
 
-        public async void Subscribe(string InstitutionId, string VehicleId, string All)
+        public async void Subscribe(string institutionId, string vehicleId)
         {
             try
             {
-                if (!string.IsNullOrEmpty(InstitutionId))
+                var claimData = GetUserClaimsData();
+                bool isSuperInstitutions = _coordinateChangeFeedbackBackgroundService.SuperInstitutions(claimData.TokenInstitutionId);
+                if (string.IsNullOrEmpty(institutionId) && string.IsNullOrEmpty(vehicleId))
                 {
-                    SubscribeInstitution(InstitutionId);
-                }
-                else if (!string.IsNullOrEmpty(VehicleId))
-                {
-                    SubscribeVehicle(VehicleId);
-                }
-                else if (!string.IsNullOrEmpty(All) && All.Equals("--all"))
-                {
-                    SubscribeAll(All);
+                    if (isSuperInstitutions)
+                    {
+                        SubscribeAll(); // Subscribe all vehicles only for super institution (eg. routes)
+                    }
+                    else
+                    {
+                        throw new Exception("{ \"code\":\"" + StatusCodes.Status401Unauthorized + "\", \"message\":\"" + CommonMessage.NotAllowed + "\" }");
+                    }
                 }
                 else
                 {
-                    await Clients.Client(Context.ConnectionId).SendAsync("CommonMessage", "{ \"code\":\"107\", \"message\":\"Please provide atleast one parameter!\" }");
-                    return;
+                    if (claimData.TokenInstitutionId == institutionId)
+                    {
+                        if (!string.IsNullOrEmpty(vehicleId) && !string.IsNullOrEmpty(institutionId))
+                        {
+                            SubscribeVehicleForNonSuper(vehicleId, institutionId); // Apply filter for vehicles for only his institution
+                        }
+                        else if (!string.IsNullOrEmpty(institutionId))
+                        {
+                            SubscribeInstitution(institutionId); // Apply filter for institution for only his institution
+                        }
+
+                    }
+                    else if (isSuperInstitutions)
+                    {
+                        if (!string.IsNullOrEmpty(institutionId))
+                        {
+                            SubscribeInstitution(institutionId); // Apply filter for any institutions
+                        }
+                        if (!string.IsNullOrEmpty(vehicleId))
+                        {
+                            SubscribeVehicle(vehicleId); // Apply filter for any vehicles
+                        }
+                    }
+                    else
+                    {
+                        throw new Exception("{ \"code\":\"" + StatusCodes.Status401Unauthorized + "\", \"message\":\"" + CommonMessage.NotAllowed + "\" }");
+                    }
                 }
             }
             catch (Exception ex)
@@ -94,7 +121,7 @@ namespace TrackService
             }
         }
 
-        public void Unsubscribe() 
+        public void Unsubscribe()
         {
             _all.RemoveAll(Context.ConnectionId);
             _institutions.RemoveAll(Context.ConnectionId);
@@ -178,49 +205,32 @@ namespace TrackService
             await base.OnDisconnectedAsync(ex);
         }
 
-        private void SubscribeInstitution(string InstitutionId)
+        private void SubscribeInstitution(string institutionId)
         {
-            var claimData = GetUserClaimsData();
-            if (claimData.TokenInstitutionId == InstitutionId)
+            if (!string.IsNullOrEmpty(institutionId))
             {
-                int institutionIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(InstitutionId);
-                if (institutionIdDecrypted > 0)
+                int institutionIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(institutionId);
+                if (_coordinateChangeFeedbackBackgroundService.CheckInstitutionExists(institutionIdDecrypted.ToString()))
                 {
-                    if (_coordinateChangeFeedbackBackgroundService.CheckInstitutionExists(institutionIdDecrypted.ToString()))
-                    {
-                        _institutions.Add(institutionIdDecrypted.ToString(), Context.ConnectionId);
-                        return;
-                    }
-                    else
-                    {
-                        throw new Exception("{ \"code\":\"101\", \"message\":\"Institution does not exists!\" }");
-                    }
+                    _institutions.Add(institutionIdDecrypted.ToString(), Context.ConnectionId);
+                    return;
                 }
                 else
                 {
-                    throw new Exception("{ \"code\":\"102\", \"message\":\"Bad request value. Invalid InstitutionId!\" }");
+                    throw new Exception("{ \"code\":\"" + StatusCodes.Status404NotFound + "\", \"message\":\"" + CommonMessage.InstitutionNotFound + "\" }");
                 }
             }
             else
             {
-                bool isSuperInstitutions = _coordinateChangeFeedbackBackgroundService.SuperInstitutions(claimData.TokenInstitutionId);
-                if (isSuperInstitutions)
-                {
-                    string All = "--all";
-                    _all.Add(All, Context.ConnectionId);
-                }
-                else
-                {
-                    throw new Exception("{ \"code\":\"103\", \"message\":\"You are not allowed to subscribe to " + InstitutionId + "!\" }");
-                }
+                throw new Exception("{ \"code\":\"" + StatusCodes.Status400BadRequest + "\", \"message\":\"" + CommonMessage.BadRequestForInstitution + "\" }");
             }
         }
 
-        private void SubscribeVehicle(string VehicleId)
+        private void SubscribeVehicle(string vehicleId)
         {
-            int vehicleIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(VehicleId);
-            if (vehicleIdDecrypted > 0)
+            if (!string.IsNullOrEmpty(vehicleId))
             {
+                int vehicleIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(vehicleId);
                 if (_coordinateChangeFeedbackBackgroundService.CheckVehicleExists(vehicleIdDecrypted.ToString()))
                 {
                     _vehicles.Add(vehicleIdDecrypted.ToString(), Context.ConnectionId);
@@ -228,26 +238,43 @@ namespace TrackService
                 }
                 else
                 {
-                    throw new Exception("{ \"code\":\"104\", \"message\":\"Vehicle does not exists!\" }");
+                    throw new Exception("{ \"code\":\"" + StatusCodes.Status404NotFound + "\", \"message\":\"" + CommonMessage.VehicleNotFound + "\" }");
                 }
             }
             else
             {
-                throw new Exception("{ \"code\":\"105\", \"message\":\"Bad request value. Invalid VehicleId!\" }");
+                throw new Exception("{ \"code\":\"" + StatusCodes.Status400BadRequest + "\", \"message\":\"" + CommonMessage.BadRequestForVehicle + "\" }");
             }
         }
 
-        private void SubscribeAll(string All)
+        private void SubscribeVehicleForNonSuper(string vehicleId, string institutionId)
         {
-            var claimData = GetUserClaimsData();
-            if (claimData.Application.ToLower() == "dashboard" && claimData.Privilege.ToLower() == "super")
+            if (string.IsNullOrEmpty(vehicleId))
             {
-                _all.Add(All, Context.ConnectionId);
+                throw new Exception("{ \"code\":\"" + StatusCodes.Status400BadRequest + "\", \"message\":\"" + CommonMessage.BadRequestForVehicle + "\" }");
+            }
+            if (string.IsNullOrEmpty(institutionId))
+            {
+                throw new Exception("{ \"code\":\"" + StatusCodes.Status400BadRequest + "\", \"message\":\"" + CommonMessage.BadRequestForInstitution + "\" }");
+            }
+
+            int institutionIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(institutionId);
+            int vehicleIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(vehicleId);
+            if (_coordinateChangeFeedbackBackgroundService.CheckVehicleByInstitutionExists(vehicleIdDecrypted.ToString(), institutionIdDecrypted.ToString()))
+            {
+                _vehicles.Add(vehicleIdDecrypted.ToString(), Context.ConnectionId);
+                return;
             }
             else
             {
-                throw new Exception("{ \"code\":\"106\", \"message\":\"You are not allowed to subscribe! \" }");
+                throw new Exception("{ \"code\":\"" + StatusCodes.Status404NotFound + "\", \"message\":\"" + CommonMessage.VehicleNotFound + "\" }");
             }
+        }
+
+        private void SubscribeAll()
+        {
+            _all.Add("--all", Context.ConnectionId);
+            return;
         }
 
         private UserClaimsData GetUserClaimsData()
