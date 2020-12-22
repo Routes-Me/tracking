@@ -65,26 +65,51 @@ namespace TrackService
             }
         }
 
-        public async void Subscribe(string InstitutionId, string VehicleId, string All)
+        public async void Subscribe(string institutionId, string vehicleId)
         {
             try
             {
-                if (!string.IsNullOrEmpty(InstitutionId))
+                var claimData = GetUserClaimsData();
+                bool isSuperInstitutions = _coordinateChangeFeedbackBackgroundService.SuperInstitutions(claimData.TokenInstitutionId);
+                if (string.IsNullOrEmpty(institutionId) && string.IsNullOrEmpty(vehicleId))
                 {
-                    SubscribeInstitution(InstitutionId);
-                }
-                else if (!string.IsNullOrEmpty(VehicleId))
-                {
-                    SubscribeVehicle(InstitutionId, VehicleId);
-                }
-                else if (!string.IsNullOrEmpty(All) && All.Equals("--all"))
-                {
-                    SubscribeAll(All);
+                    if (isSuperInstitutions)
+                    {
+                        SubscribeAll(); // Subscribe all vehicles only for super institution (eg. routes)
+                    }
+                    else
+                    {
+                        throw new Exception("{ \"code\":\"101\", \"message\":\"You are not allowed to subscribe!\" }");
+                    }
                 }
                 else
                 {
-                    await Clients.Client(Context.ConnectionId).SendAsync("CommonMessage", "{ \"code\":\"107\", \"message\":\"Please provide atleast one parameter!\" }");
-                    return;
+                    if (claimData.TokenInstitutionId == institutionId)
+                    {
+                        if (!string.IsNullOrEmpty(institutionId))
+                        {
+                            SubscribeInstitution(institutionId); // Apply filter for institution for only his institution
+                        }
+                        if (!string.IsNullOrEmpty(vehicleId) && !string.IsNullOrEmpty(institutionId)) 
+                        {
+                            SubscribeVehicleForNonSuper(vehicleId, institutionId); // Apply filter for vehicles for only his institution
+                        }
+                    }
+                    else if (isSuperInstitutions)
+                    {
+                        if (!string.IsNullOrEmpty(institutionId))
+                        {
+                            SubscribeInstitution(institutionId); // Apply filter for any institutions
+                        }
+                        if (!string.IsNullOrEmpty(vehicleId))
+                        {
+                            SubscribeVehicle(vehicleId); // Apply filter for any vehicles
+                        }
+                    }
+                    else
+                    {
+                        throw new Exception("{ \"code\":\"101\", \"message\":\"You are not allowed to subscribe!\" }");
+                    }
                 }
             }
             catch (Exception ex)
@@ -178,83 +203,76 @@ namespace TrackService
             await base.OnDisconnectedAsync(ex);
         }
 
-        private void SubscribeInstitution(string InstitutionId)
+        private void SubscribeInstitution(string institutionId)
         {
-            var claimData = GetUserClaimsData();
-            if (claimData.TokenInstitutionId == InstitutionId)
+            int institutionIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(institutionId);
+            if (institutionIdDecrypted > 0)
             {
-                int institutionIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(InstitutionId);
-                if (institutionIdDecrypted > 0)
+                if (_coordinateChangeFeedbackBackgroundService.CheckInstitutionExists(institutionIdDecrypted.ToString()))
                 {
-                    if (_coordinateChangeFeedbackBackgroundService.CheckInstitutionExists(institutionIdDecrypted.ToString()))
-                    {
-                        _institutions.Add(institutionIdDecrypted.ToString(), Context.ConnectionId);
-                        return;
-                    }
-                    else
-                    {
-                        throw new Exception("{ \"code\":\"101\", \"message\":\"Institution does not exists!\" }");
-                    }
+                    _institutions.Add(institutionIdDecrypted.ToString(), Context.ConnectionId);
+                    return;
                 }
                 else
                 {
-                    throw new Exception("{ \"code\":\"102\", \"message\":\"Bad request value. Invalid InstitutionId!\" }");
+                    throw new Exception("{ \"code\":\"102\", \"message\":\"Institution does not exists!\" }");
                 }
             }
             else
             {
-                bool isSuperInstitutions = _coordinateChangeFeedbackBackgroundService.SuperInstitutions(claimData.TokenInstitutionId);
-                if (isSuperInstitutions)
-                {
-                    string All = "--all";
-                    _all.Add(All, Context.ConnectionId);
-                }
-                else
-                {
-                    throw new Exception("{ \"code\":\"103\", \"message\":\"You are not allowed to subscribe to " + InstitutionId + "!\" }");
-                }
+                throw new Exception("{ \"code\":\"103\", \"message\":\"Bad request value. Invalid InstitutionId!\" }");
             }
         }
 
-        private void SubscribeVehicle(string InstitutionId, string VehicleId)
+        private void SubscribeVehicle(string vehicleId)
         {
-            if (!string.IsNullOrEmpty(InstitutionId))
+            int vehicleIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(vehicleId);
+            if (vehicleIdDecrypted > 0)
             {
-                int vehicleIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(VehicleId);
-                if (vehicleIdDecrypted > 0)
+                if (_coordinateChangeFeedbackBackgroundService.CheckVehicleExists(vehicleIdDecrypted.ToString()))
                 {
-                    if (_coordinateChangeFeedbackBackgroundService.CheckVehicleExists(vehicleIdDecrypted.ToString()))
-                    {
-                        _vehicles.Add(vehicleIdDecrypted.ToString(), Context.ConnectionId);
-                        return;
-                    }
-                    else
-                    {
-                        throw new Exception("{ \"code\":\"104\", \"message\":\"Vehicle does not exists!\" }");
-                    }
+                    _vehicles.Add(vehicleIdDecrypted.ToString(), Context.ConnectionId);
+                    return;
                 }
                 else
                 {
-                    throw new Exception("{ \"code\":\"105\", \"message\":\"Bad request value. Invalid VehicleId!\" }");
+                    throw new Exception("{ \"code\":\"104\", \"message\":\"Vehicle does not exists!\" }");
                 }
             }
             else
             {
-                throw new Exception("{ \"code\":\"108\", \"message\":\"Please subscribe institution first! }");
+                throw new Exception("{ \"code\":\"105\", \"message\":\"Bad request value. Invalid VehicleId!\" }");
             }
         }
 
-        private void SubscribeAll(string All)
+        private void SubscribeVehicleForNonSuper(string vehicleId, string institutionId)
         {
-            var claimData = GetUserClaimsData();
-            if (claimData.Application.ToLower() == "dashboard" && claimData.Privilege.ToLower() == "super")
+            int institutionIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(institutionId);
+            int vehicleIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(vehicleId);
+            if (vehicleIdDecrypted > 0)
             {
-                _all.Add(All, Context.ConnectionId);
+                throw new Exception("{ \"code\":\"105\", \"message\":\"Bad request value. Invalid VehicleId!\" }");
+            }
+            if (institutionIdDecrypted > 0)
+            {
+                throw new Exception("{ \"code\":\"103\", \"message\":\"Bad request value. Invalid InstitutionId!\" }");
+            }
+
+            if (_coordinateChangeFeedbackBackgroundService.CheckVehicleByInstitutionExists(vehicleIdDecrypted.ToString(), institutionIdDecrypted.ToString()))
+            {
+                _vehicles.Add(vehicleIdDecrypted.ToString(), Context.ConnectionId);
+                return;
             }
             else
             {
-                throw new Exception("{ \"code\":\"106\", \"message\":\"You are not allowed to subscribe! \" }");
+                throw new Exception("{ \"code\":\"104\", \"message\":\"Vehicle does not exists!\" }");
             }
+        }
+
+        private void SubscribeAll()
+        {
+            _all.Add("--all", Context.ConnectionId);
+            return;
         }
 
         private UserClaimsData GetUserClaimsData()

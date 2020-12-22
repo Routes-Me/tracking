@@ -625,5 +625,21 @@ namespace TrackService.RethinkDb_Changefeed
         {
             return ObfuscationClass.EncodeId(id, _appSettings.Prime).ToString();
         }
+
+        public bool CheckVehicleByInstitutionExists(string vehicleId, string institutionId)
+        {
+
+            ReqlFunction1 filter1 = expr => expr["vehicleId"].Eq(Convert.ToInt32(vehicleId));
+            ReqlFunction1 filter2 = expr => expr["institutionId"].Eq(Convert.ToInt32(institutionId));
+            string filterSerializedByVehicles = ReqlRaw.ToRawString(filter1);
+            string filterSerializedByInstitution = ReqlRaw.ToRawString(filter2);
+            var filterExprByVehicles = ReqlRaw.FromRawString(filterSerializedByVehicles);
+            var filterExprByInstitution = ReqlRaw.FromRawString(filterSerializedByInstitution);
+            Cursor<object> vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprByVehicles).Filter(filterExprByInstitution).Run(_rethinkDbConnection);
+            if (vehicles.Count() > 0)
+                return true;
+            else
+                return false;
+        }
     }
 }
