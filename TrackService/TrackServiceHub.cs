@@ -79,7 +79,7 @@ namespace TrackService
                     }
                     else
                     {
-                        throw new Exception("{ \"code\":\"101\", \"message\":\"You are not allowed to subscribe!\" }");
+                        throw new Exception("{ \"code\":\"401\", \"message\":\"You are not allowed to subscribe!\" }");
                     }
                 }
                 else
@@ -109,7 +109,7 @@ namespace TrackService
                     }
                     else
                     {
-                        throw new Exception("{ \"code\":\"101\", \"message\":\"You are not allowed to subscribe!\" }");
+                        throw new Exception("{ \"code\":\"401\", \"message\":\"You are not allowed to subscribe!\" }");
                     }
                 }
             }
@@ -216,12 +216,12 @@ namespace TrackService
                 }
                 else
                 {
-                    throw new Exception("{ \"code\":\"102\", \"message\":\"Institution does not exists!\" }");
+                    throw new Exception("{ \"code\":\"404\", \"message\":\"Institution does not exists!\" }");
                 }
             }
             else
             {
-                throw new Exception("{ \"code\":\"103\", \"message\":\"Bad request value. Invalid InstitutionId!\" }");
+                throw new Exception("{ \"code\":\"400\", \"message\":\"Bad request value. Invalid InstitutionId!\" }");
             }
         }
 
@@ -237,28 +237,28 @@ namespace TrackService
                 }
                 else
                 {
-                    throw new Exception("{ \"code\":\"104\", \"message\":\"Vehicle does not exists!\" }");
+                    throw new Exception("{ \"code\":\"404\", \"message\":\"Vehicle does not exists!\" }");
                 }
             }
             else
             {
-                throw new Exception("{ \"code\":\"105\", \"message\":\"Bad request value. Invalid VehicleId!\" }");
+                throw new Exception("{ \"code\":\"400\", \"message\":\"Bad request value. Invalid VehicleId!\" }");
             }
         }
 
         private void SubscribeVehicleForNonSuper(string vehicleId, string institutionId)
         {
-            int institutionIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(institutionId);
-            int vehicleIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(vehicleId);
-            if (vehicleIdDecrypted == 0)
+            if (string.IsNullOrEmpty(vehicleId))
             {
-                throw new Exception("{ \"code\":\"105\", \"message\":\"Bad request value. Invalid VehicleId!\" }");
+                throw new Exception("{ \"code\":\"400\", \"message\":\"Bad request value. Invalid VehicleId!\" }");
             }
-            if (institutionIdDecrypted == 0)
+            if (string.IsNullOrEmpty(institutionId))
             {
-                throw new Exception("{ \"code\":\"103\", \"message\":\"Bad request value. Invalid InstitutionId!\" }");
+                throw new Exception("{ \"code\":\"400\", \"message\":\"Bad request value. Invalid InstitutionId!\" }");
             }
 
+            int institutionIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(institutionId);
+            int vehicleIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(vehicleId);
             if (_coordinateChangeFeedbackBackgroundService.CheckVehicleByInstitutionExists(vehicleIdDecrypted.ToString(), institutionIdDecrypted.ToString()))
             {
                 _vehicles.Add(vehicleIdDecrypted.ToString(), Context.ConnectionId);
@@ -266,7 +266,7 @@ namespace TrackService
             }
             else
             {
-                throw new Exception("{ \"code\":\"104\", \"message\":\"Vehicle does not exists!\" }");
+                throw new Exception("{ \"code\":\"404\", \"message\":\"Vehicle does not exists!\" }");
             }
         }
 
