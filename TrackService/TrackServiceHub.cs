@@ -86,14 +86,15 @@ namespace TrackService
                 {
                     if (claimData.TokenInstitutionId == institutionId)
                     {
-                        if (!string.IsNullOrEmpty(institutionId))
-                        {
-                            SubscribeInstitution(institutionId); // Apply filter for institution for only his institution
-                        }
-                        if (!string.IsNullOrEmpty(vehicleId) && !string.IsNullOrEmpty(institutionId)) 
+                        if (!string.IsNullOrEmpty(vehicleId) && !string.IsNullOrEmpty(institutionId))
                         {
                             SubscribeVehicleForNonSuper(vehicleId, institutionId); // Apply filter for vehicles for only his institution
                         }
+                        else if (!string.IsNullOrEmpty(institutionId))
+                        {
+                            SubscribeInstitution(institutionId); // Apply filter for institution for only his institution
+                        }
+                        
                     }
                     else if (isSuperInstitutions)
                     {
@@ -249,11 +250,11 @@ namespace TrackService
         {
             int institutionIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(institutionId);
             int vehicleIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(vehicleId);
-            if (vehicleIdDecrypted > 0)
+            if (vehicleIdDecrypted == 0)
             {
                 throw new Exception("{ \"code\":\"105\", \"message\":\"Bad request value. Invalid VehicleId!\" }");
             }
-            if (institutionIdDecrypted > 0)
+            if (institutionIdDecrypted == 0)
             {
                 throw new Exception("{ \"code\":\"103\", \"message\":\"Bad request value. Invalid InstitutionId!\" }");
             }
