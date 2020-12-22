@@ -75,7 +75,7 @@ namespace TrackService
                 }
                 else if (!string.IsNullOrEmpty(VehicleId))
                 {
-                    SubscribeVehicle(VehicleId);
+                    SubscribeVehicle(InstitutionId, VehicleId);
                 }
                 else if (!string.IsNullOrEmpty(All) && All.Equals("--all"))
                 {
@@ -94,7 +94,7 @@ namespace TrackService
             }
         }
 
-        public void Unsubscribe() 
+        public void Unsubscribe()
         {
             _all.RemoveAll(Context.ConnectionId);
             _institutions.RemoveAll(Context.ConnectionId);
@@ -216,24 +216,31 @@ namespace TrackService
             }
         }
 
-        private void SubscribeVehicle(string VehicleId)
+        private void SubscribeVehicle(string InstitutionId, string VehicleId)
         {
-            int vehicleIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(VehicleId);
-            if (vehicleIdDecrypted > 0)
+            if (!string.IsNullOrEmpty(InstitutionId))
             {
-                if (_coordinateChangeFeedbackBackgroundService.CheckVehicleExists(vehicleIdDecrypted.ToString()))
+                int vehicleIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(VehicleId);
+                if (vehicleIdDecrypted > 0)
                 {
-                    _vehicles.Add(vehicleIdDecrypted.ToString(), Context.ConnectionId);
-                    return;
+                    if (_coordinateChangeFeedbackBackgroundService.CheckVehicleExists(vehicleIdDecrypted.ToString()))
+                    {
+                        _vehicles.Add(vehicleIdDecrypted.ToString(), Context.ConnectionId);
+                        return;
+                    }
+                    else
+                    {
+                        throw new Exception("{ \"code\":\"104\", \"message\":\"Vehicle does not exists!\" }");
+                    }
                 }
                 else
                 {
-                    throw new Exception("{ \"code\":\"104\", \"message\":\"Vehicle does not exists!\" }");
+                    throw new Exception("{ \"code\":\"105\", \"message\":\"Bad request value. Invalid VehicleId!\" }");
                 }
             }
             else
             {
-                throw new Exception("{ \"code\":\"105\", \"message\":\"Bad request value. Invalid VehicleId!\" }");
+                throw new Exception("{ \"code\":\"108\", \"message\":\"Please subscribe institution first! }");
             }
         }
 
