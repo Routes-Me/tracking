@@ -103,13 +103,6 @@ namespace TrackService.RethinkDb_Changefeed
             );
         }
 
-        public async Task<IChangefeed<Mobiles>> GetMobileChangeFeedback(CancellationToken cancellationToken)
-        {
-            return new RethinkDbChangefeed<Mobiles>(
-                await _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Changes().RunChangesAsync<Mobiles>(_rethinkDbConnection, cancellationToken)
-            );
-        }
-
         public async Task<dynamic> GetAllVehicleByInstitutionId(IdleModel model)
         {
             try
@@ -417,12 +410,14 @@ namespace TrackService.RethinkDb_Changefeed
         }
 
         // This is called from background service Monitor Vehicle
-        public void UpdateVehicleStatus()
+        public List<string> UpdateVehicleStatus()
         {
-            ReqlFunction1 filter = expr => expr["timestamp"].Le(DateTime.UtcNow.AddMinutes(-2));
+            ReqlFunction1 filter = expr => expr["timestamp"].Le(DateTime.UtcNow.AddMinutes(-1));
+
             string filterSerialized = ReqlRaw.ToRawString(filter);
             var filterExpr = ReqlRaw.FromRawString(filterSerialized);
-            Cursor<object> vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExpr).Run(_rethinkDbConnection);
+            Cursor<object> vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExpr).Filter(new { isLive = true }).Run(_rethinkDbConnection);
+            List<string> idealVehicleList = new List<string>();
 
             if (vehicles.BufferedSize > 0)
             {
@@ -432,11 +427,12 @@ namespace TrackService.RethinkDb_Changefeed
                     _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME)
                             .Filter(new { id = response.id })
                             .Update(new { isLive = false }).Run(_rethinkDbConnection);
+
+                    idealVehicleList.Add(response.vehicleId.ToString());
                 }
             }
+            return idealVehicleList;
         }
-
-   
 
         public void ChangeVehicleStatus(string vehicleId)
         {
@@ -651,6 +647,6 @@ namespace TrackService.RethinkDb_Changefeed
                 return false;
         }
 
-        
+
     }
 }

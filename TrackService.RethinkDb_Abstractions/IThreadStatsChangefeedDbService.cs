@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace TrackService.RethinkDb_Abstractions
@@ -7,13 +8,12 @@ namespace TrackService.RethinkDb_Abstractions
     {
         Task EnsureDatabaseCreated();
         Task InsertCordinates(CordinatesModel trackingStats);
-        void UpdateVehicleStatus();
+        List<string> UpdateVehicleStatus();
         void ChangeVehicleStatus(string vehicleId);
         string GetInstitutionId(string mobileId);
         bool CheckVehicleExists(string vehicleId);
         bool CheckInstitutionExists(string institutionId);
         Task<IChangefeed<Coordinates>> GetCoordinatesChangeFeedback(CancellationToken cancellationToken);
-        Task<IChangefeed<Mobiles>> GetMobileChangeFeedback(CancellationToken cancellationToken);
         Task<dynamic> GetAllVehicleByInstitutionId(IdleModel IdleModel);
         Task<dynamic> GetAllVehicleDetail(Pagination pageInfo, IdleModel IdleModel);
         void SyncCoordinatesToArchiveTable();
