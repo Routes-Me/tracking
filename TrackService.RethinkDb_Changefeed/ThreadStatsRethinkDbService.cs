@@ -16,6 +16,7 @@ using TrackService.RethinkDb_Changefeed.Model.Common;
 using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Http;
 using Obfuscation;
+using RestSharp;
 
 namespace TrackService.RethinkDb_Changefeed
 {
@@ -102,6 +103,13 @@ namespace TrackService.RethinkDb_Changefeed
             );
         }
 
+        public async Task<IChangefeed<Mobiles>> GetMobileChangeFeedback(CancellationToken cancellationToken)
+        {
+            return new RethinkDbChangefeed<Mobiles>(
+                await _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Changes().RunChangesAsync<Mobiles>(_rethinkDbConnection, cancellationToken)
+            );
+        }
+
         public async Task<dynamic> GetAllVehicleByInstitutionId(IdleModel model)
         {
             try
@@ -121,16 +129,8 @@ namespace TrackService.RethinkDb_Changefeed
                 if (InstitutionData.BufferedSize == 0)
                     return ReturnResponse.ErrorResponse("Institution does not exists in database.", StatusCodes.Status404NotFound);
 
-                if (model.status == "active")
-                {
-                    ReqlFunction1 filterForLive = expr => expr["isLive"].Eq(true);
-                    filterSerializedForLive = ReqlRaw.ToRawString(filterForLive);
-                }
-                else
-                {
-                    ReqlFunction1 filterForLive = expr => expr["isLive"].Eq(false);
-                    filterSerializedForLive = ReqlRaw.ToRawString(filterForLive);
-                }
+                ReqlFunction1 filterForLive = expr => expr["isLive"].Eq(false);
+                filterSerializedForLive = ReqlRaw.ToRawString(filterForLive);
                 var filterExprForLive = ReqlRaw.FromRawString(filterSerializedForLive);
 
                 if (!string.IsNullOrEmpty(Convert.ToString(model.startAt)) && !string.IsNullOrEmpty(Convert.ToString(model.endAt)) && DateTime.TryParse(Convert.ToString(model.startAt), out startDate) && DateTime.TryParse(Convert.ToString(model.endAt), out endDate))
@@ -253,16 +253,8 @@ namespace TrackService.RethinkDb_Changefeed
                 string filterSerialized = string.Empty;
                 VehicleResponse oVehicleResponse = new VehicleResponse();
 
-                if (model.status == "active")
-                {
-                    ReqlFunction1 filter = expr => expr["isLive"].Eq(true);
-                    filterSerialized = ReqlRaw.ToRawString(filter);
-                }
-                else
-                {
-                    ReqlFunction1 filter = expr => expr["isLive"].Eq(false);
-                    filterSerialized = ReqlRaw.ToRawString(filter);
-                }
+                ReqlFunction1 filter = expr => expr["isLive"].Eq(false);
+                filterSerialized = ReqlRaw.ToRawString(filter);
                 var filterExpr = ReqlRaw.FromRawString(filterSerialized);
 
                 if (!string.IsNullOrEmpty(Convert.ToString(model.startAt)) && !string.IsNullOrEmpty(Convert.ToString(model.endAt)) && DateTime.TryParse(Convert.ToString(model.startAt), out startDate) && DateTime.TryParse(Convert.ToString(model.endAt), out endDate))
@@ -427,7 +419,7 @@ namespace TrackService.RethinkDb_Changefeed
         // This is called from background service Monitor Vehicle
         public void UpdateVehicleStatus()
         {
-            ReqlFunction1 filter = expr => expr["timestamp"].Le(DateTime.UtcNow.AddMinutes(-10));
+            ReqlFunction1 filter = expr => expr["timestamp"].Le(DateTime.UtcNow.AddMinutes(-2));
             string filterSerialized = ReqlRaw.ToRawString(filter);
             var filterExpr = ReqlRaw.FromRawString(filterSerialized);
             Cursor<object> vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExpr).Run(_rethinkDbConnection);
@@ -437,13 +429,14 @@ namespace TrackService.RethinkDb_Changefeed
                 foreach (var vehicle in vehicles)
                 {
                     MobileJSONResponse response = JsonConvert.DeserializeObject<MobileJSONResponse>(vehicle.ToString());
-
                     _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME)
                             .Filter(new { id = response.id })
                             .Update(new { isLive = false }).Run(_rethinkDbConnection);
                 }
             }
         }
+
+   
 
         public void ChangeVehicleStatus(string vehicleId)
         {
@@ -472,7 +465,7 @@ namespace TrackService.RethinkDb_Changefeed
                 Cursor<object> coordinates = _rethinkDbSingleton.Db(DATABASE_NAME).Table(CORDINATE_TABLE_NAME).Filter(filterExpr).Run(_rethinkDbConnection);
 
                 List<ArchiveCoordinates> archiveCoordinates = new List<ArchiveCoordinates>();
-                double latitude = 0, longitude = 0;
+                decimal latitude = 0, longitude = 0;
                 int deviceId = 0, vehicleId = 0;
                 string CoordinateId = string.Empty;
                 DateTime? timestamp = null;
@@ -486,11 +479,11 @@ namespace TrackService.RethinkDb_Changefeed
                         }
                         if (((JProperty)value).Name.ToString() == "latitude")
                         {
-                            latitude = Convert.ToDouble(((JProperty)value).Value.ToString());
+                            latitude = Convert.ToDecimal(((JProperty)value).Value.ToString());
                         }
                         else if (((JProperty)value).Name.ToString() == "longitude")
                         {
-                            longitude = Convert.ToDouble(((JProperty)value).Value.ToString());
+                            longitude = Convert.ToDecimal(((JProperty)value).Value.ToString());
                         }
                         else if (((JProperty)value).Name.ToString() == "timestamp")
                         {
@@ -528,25 +521,26 @@ namespace TrackService.RethinkDb_Changefeed
                     archiveCoordinates.Add(new ArchiveCoordinates
                     {
                         CoordinateId = CoordinateId,
+                        VehicleId = vehicleId,
+                        DeviceId = deviceId,
                         Latitude = latitude,
                         Longitude = longitude,
-                        timestamp = timestamp.ToString(),
-                        VehicleId = vehicleId,
-                        DeviceId = deviceId
+                        Timestamp = timestamp
                     });
                 }
 
                 if (archiveCoordinates.Count > 0 && archiveCoordinates != null)
                 {
-                    using (var client = new HttpClient())
-                    {
-                        client.BaseAddress = new Uri(_appSettings.Host + _dependencies.ArchiveTrackServiceUrl);
-                        var res = client.PostAsync("feeds", new StringContent(new JavaScriptSerializer().Serialize(archiveCoordinates), Encoding.UTF8, "application/json")).Result;
 
-                        if (res.StatusCode == HttpStatusCode.Created)
-                        {
-                            _rethinkDbSingleton.Db(DATABASE_NAME).Table(CORDINATE_TABLE_NAME).Filter(filterExpr).Delete().Run(_rethinkDbConnection);
-                        }
+                    var client = new RestClient(_appSettings.Host + _dependencies.ArchiveTrackServiceUrl);
+                    var request = new RestRequest(Method.POST);
+                    string jsonToSend = JsonConvert.SerializeObject(archiveCoordinates);
+                    request.AddParameter("application/json; charset=utf-8", jsonToSend, ParameterType.RequestBody);
+                    request.RequestFormat = DataFormat.Json;
+                    IRestResponse response = client.Execute(request);
+                    if (response.StatusCode != HttpStatusCode.Created)
+                    {
+                        _rethinkDbSingleton.Db(DATABASE_NAME).Table(CORDINATE_TABLE_NAME).Filter(filterExpr).Delete().Run(_rethinkDbConnection);
                     }
                 }
             }
@@ -585,6 +579,20 @@ namespace TrackService.RethinkDb_Changefeed
                     }).Run(_rethinkDbConnection);
                 }).Wait();
             }
+            else
+            {
+                MobileJSONResponse response = new MobileJSONResponse();
+                foreach (var item in vehicle)
+                {
+                    response = JsonConvert.DeserializeObject<MobileJSONResponse>(item.ToString());
+                }
+                if (response.isLive == false)
+                {
+                    _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME)
+                   .Filter(new { id = response.id })
+                   .Update(new { isLive = true }).Run(_rethinkDbConnection);
+                }
+            }
 
             return Task.CompletedTask;
         }
@@ -621,6 +629,7 @@ namespace TrackService.RethinkDb_Changefeed
         {
             return ObfuscationClass.DecodeId(Convert.ToInt32(id), _appSettings.PrimeInverse);
         }
+
         public string IdEncryption(int id)
         {
             return ObfuscationClass.EncodeId(id, _appSettings.Prime).ToString();
@@ -641,5 +650,7 @@ namespace TrackService.RethinkDb_Changefeed
             else
                 return false;
         }
+
+        
     }
 }

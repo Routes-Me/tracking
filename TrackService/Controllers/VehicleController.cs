@@ -25,7 +25,7 @@ namespace TrackService.Controllers
         }
 
         [HttpGet]
-        [Route("vehicles")]
+        [Route("vehicles/ideals")]
         public async Task<IActionResult> VehicleStatus([FromQuery] Pagination pageInfo, [FromQuery] IdleModel IdleModel)
         {
             if (string.IsNullOrEmpty(Convert.ToString(IdleModel.institutionId)))

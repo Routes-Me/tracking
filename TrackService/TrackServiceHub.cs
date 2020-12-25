@@ -121,6 +121,11 @@ namespace TrackService
             }
         }
 
+        public async void NotifyIdealVehicleStatusToDashborad(IHubContext<TrackServiceHub> hubContext, string json)
+        {
+            await hubContext.Clients.All.SendAsync("FeedsReceiver", json);
+        }
+
         public void Unsubscribe()
         {
             _all.RemoveAll(Context.ConnectionId);
@@ -133,25 +138,22 @@ namespace TrackService
             int institutionIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(institutionId);
             int vehicleIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(vehicleId);
 
-            // Send data to ReceiveAll screen
-            await context.Clients.All.SendAsync("ReceiveAllData", json);
-
-            // Send all vehicle data to Admin.
+            // Send data to admin screen
             foreach (var connectionid in _all.GetAll_ConnectionId("--all"))
             {
-                await context.Clients.Client(connectionid).SendAsync("ReceiveAllVehicleData", json);
+                await context.Clients.Client(connectionid).SendAsync("FeedsReceiver", json);
             }
 
-            // Send all vehicle for institution.
+            // Send data to institutions screen
             foreach (var connectionid in _institutions.GetInstitution_ConnectionId(institutionIdDecrypted.ToString()))
             {
-                await context.Clients.Client(connectionid).SendAsync("ReceiveInstitutionData", json);
+                await context.Clients.Client(connectionid).SendAsync("FeedsReceiver", json);
             }
 
-            // Send vehicle data for vehicle.
+            // Send data to vehicles screen
             foreach (var connectionid in _vehicles.GetVehicle_ConnectionId(vehicleIdDecrypted.ToString()))
             {
-                await context.Clients.Client(connectionid).SendAsync("ReceiveVehicleData", json);
+                await context.Clients.Client(connectionid).SendAsync("FeedsReceiver", json);
             }
         }
 

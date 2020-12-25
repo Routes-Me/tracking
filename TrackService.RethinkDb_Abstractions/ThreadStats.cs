@@ -119,16 +119,11 @@ namespace TrackService.RethinkDb_Abstractions
     public class ArchiveCoordinates
     {
         public string CoordinateId { get; set; }
-        public double Latitude { get; set; }
-        public double Longitude { get; set; }
-        public string timestamp { get; set; }
-        public int VehicleId { get; set; }
-        public int DeviceId { get; set; }
-        
-        //public string mobileId { get; set; }
-        //public double longitude { get; set; }
-        //public double latitude { get; set; }
-        //public DateTime? timestamp { get; set; }
+        public int? DeviceId { get; set; }
+        public int? VehicleId { get; set; }
+        public decimal? Latitude { get; set; }
+        public decimal? Longitude { get; set; }
+        public DateTime? Timestamp { get; set; }
     }
 
     public class MobileJSONResponse

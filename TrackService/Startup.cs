@@ -67,6 +67,7 @@ namespace TrackService
             {
                 c.TimeZoneInfo = TimeZoneInfo.Utc;
                 c.CronExpression = @"0 1 */1 * * "; // Run every day at 1 AM
+               // c.CronExpression = @"*/2 * * * *"; // Run every 2 minutes
             });
 
             services.AddCronJob<SyncVehicles>(c =>
