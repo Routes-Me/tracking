@@ -103,130 +103,21 @@ namespace TrackService.RethinkDb_Changefeed
             );
         }
 
-        public async Task<dynamic> GetAllVehicleByInstitutionId(IdleModel model)
+        public dynamic GetVehicles(string vehicleId, Pagination pageInfo, IdleModel model)
         {
             try
             {
-                var keys = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Run(_rethinkDbConnection);
-                DateTime startDate;
-                DateTime endDate;
-                string filterSerializedForLive = string.Empty;
-                Cursor<object> vehicles;
                 VehicleResponse oVehicleResponse = new VehicleResponse();
+                var vehicles = GetVehiclesFromDb(vehicleId, model);
+                var vehicleList = GetVehicleList(vehicles);
 
-                ReqlFunction1 filterForinstitutionId = expr => expr["institutionId"].Eq(Convert.ToInt32(model.institutionId));
-                string filterSerializedForinstitutionId = ReqlRaw.ToRawString(filterForinstitutionId);
-                var filterExprForinstitutionId = ReqlRaw.FromRawString(filterSerializedForinstitutionId);
-
-                Cursor<object> InstitutionData = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Run(_rethinkDbConnection);
-                if (InstitutionData.BufferedSize == 0)
-                    return ReturnResponse.ErrorResponse("Institution does not exists in database.", StatusCodes.Status404NotFound);
-
-                ReqlFunction1 filterForLive = expr => expr["isLive"].Eq(false);
-                filterSerializedForLive = ReqlRaw.ToRawString(filterForLive);
-                var filterExprForLive = ReqlRaw.FromRawString(filterSerializedForLive);
-
-                if (!string.IsNullOrEmpty(Convert.ToString(model.startAt)) && !string.IsNullOrEmpty(Convert.ToString(model.endAt)) && DateTime.TryParse(Convert.ToString(model.startAt), out startDate) && DateTime.TryParse(Convert.ToString(model.endAt), out endDate))
-                {
-                    ReqlFunction1 filterForStartDate = expr => expr["timestamp"].Ge(startDate);
-                    string filterSerializedForStartDate = ReqlRaw.ToRawString(filterForStartDate);
-                    var filterExprForStartDate = ReqlRaw.FromRawString(filterSerializedForStartDate);
-
-                    ReqlFunction1 filterForEndDate = expr => expr["timestamp"].Le(endDate);
-                    string filterSerializedForEndDate = ReqlRaw.ToRawString(filterForEndDate);
-                    var filterExprForEndDate = ReqlRaw.FromRawString(filterSerializedForEndDate);
-
-                    vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterExprForLive).Filter(filterForStartDate).Filter(filterForEndDate).Run(_rethinkDbConnection);
-                }
-                else
-                {
-                    vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterExprForLive).Run(_rethinkDbConnection);
-                }
-
-                List<VehicleDetails> listVehicles = new List<VehicleDetails>();
-                List<CoordinatesDetail> listCoordinates = new List<CoordinatesDetail>();
-
-                foreach (var vehicle in vehicles)
-                {
-                    string VehicleId = string.Empty, institutionId = string.Empty, DeviceId = string.Empty;
-                    foreach (var value in JObject.Parse(vehicle.ToString()).Children())
-                    {
-
-                        if (((JProperty)value).Name.ToString() == "id")
-                        {
-
-                            ReqlFunction1 cordinatefilter = expr => expr["mobileId"].Eq(((JProperty)value).Value.ToString());
-                            string cordinatefilterSerialized = ReqlRaw.ToRawString(cordinatefilter);
-                            var cordinatefilterExpr = ReqlRaw.FromRawString(cordinatefilterSerialized);
-                            Cursor<object> coordinates = _rethinkDbSingleton.Db(DATABASE_NAME).Table(CORDINATE_TABLE_NAME).Filter(cordinatefilterExpr).Run(_rethinkDbConnection);
-
-                            foreach (var coordinate in coordinates)
-                            {
-                                string latitude = string.Empty, longitude = string.Empty, timestamp = string.Empty;
-                                foreach (var cordinatevalue in JObject.Parse(coordinate.ToString()).Children())
-                                {
-
-                                    if (((JProperty)cordinatevalue).Name.ToString() == "latitude")
-                                    {
-                                        latitude = ((JProperty)cordinatevalue).Value.ToString();
-                                    }
-                                    else if (((JProperty)cordinatevalue).Name.ToString() == "longitude")
-                                    {
-                                        longitude = ((JProperty)cordinatevalue).Value.ToString();
-                                    }
-                                    else if (((JProperty)cordinatevalue).Name.ToString() == "timestamp")
-                                    {
-                                        var epocTime = ((JProperty)cordinatevalue).Value.ToString();
-                                        foreach (var timestampVal in JObject.Parse(epocTime).Children())
-                                        {
-                                            if (((JProperty)timestampVal).Name.ToString() == "epoch_time")
-                                            {
-                                                var UnixTime = ((JProperty)timestampVal).Value.ToString();
-
-                                                System.DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
-                                                timestamp = dateTime.AddSeconds(Convert.ToDouble(UnixTime)).ToLocalTime().ToString();
-                                                break;
-                                            }
-                                        }
-                                    }
-                                    else if (((JProperty)cordinatevalue).Name.ToString() == "deviceId")
-                                    {
-                                        DeviceId = ((JProperty)cordinatevalue).Value.ToString();
-                                    }
-                                }
-                                listCoordinates.Add(new CoordinatesDetail
-                                {
-                                    latitude = Convert.ToDouble(latitude),
-                                    longitude = Convert.ToDouble(longitude),
-                                    timestamp = timestamp
-                                });
-                            }
-                        }
-                        else if (((JProperty)value).Name.ToString() == "vehicleId")
-                        {
-                            VehicleId = ((JProperty)value).Value.ToString();
-                        }
-                        else if (((JProperty)value).Name.ToString() == "institutionId")
-                        {
-                            institutionId = ((JProperty)value).Value.ToString();
-                        }
-                    }
-                    listVehicles.Add(new VehicleDetails
-                    {
-                        deviceId = DeviceId,
-                        vehicleId = VehicleId,
-                        institutionId = institutionId,
-                        coordinates = listCoordinates
-                    });
-                }
-
-                if (listVehicles == null || listVehicles.Count == 0)
+                if (vehicleList == null || vehicleList.Count == 0)
                     return ReturnResponse.ErrorResponse("Vehicle not found.", StatusCodes.Status404NotFound);
 
                 oVehicleResponse.status = true;
                 oVehicleResponse.message = "Vehicle retrived successfully.";
                 oVehicleResponse.statusCode = StatusCodes.Status200OK;
-                oVehicleResponse.data = listVehicles;
+                oVehicleResponse.data = vehicleList;
                 return oVehicleResponse;
             }
             catch (Exception ex)
@@ -235,20 +126,89 @@ namespace TrackService.RethinkDb_Changefeed
             }
         }
 
-        public async Task<dynamic> GetAllVehicleDetail(Pagination pageInfo, IdleModel model)
+        private Cursor<object> GetVehiclesFromDb(string vehicleId, IdleModel model)
         {
-            try
-            {
-                var keys = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Run(_rethinkDbConnection);
-                DateTime startDate;
-                DateTime endDate;
-                Cursor<object> vehicles;
-                string filterSerialized = string.Empty;
-                VehicleResponse oVehicleResponse = new VehicleResponse();
+            var keys = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Run(_rethinkDbConnection);
+            DateTime startDate;
+            DateTime endDate;
+            string filterSerializedForLive = string.Empty;
+            string filterSerialized = string.Empty;
+            Cursor<object> vehicles;
+            ReqlFunction1 filterForVehicleId = null;
 
-                ReqlFunction1 filter = expr => expr["isLive"].Eq(false);
-                filterSerialized = ReqlRaw.ToRawString(filter);
-                var filterExpr = ReqlRaw.FromRawString(filterSerialized);
+            if (!string.IsNullOrEmpty(vehicleId))
+            {
+                filterForVehicleId = expr => expr["vehicleId"].Eq(Convert.ToInt32(vehicleId));
+                string filterSerializedForVehicleId = ReqlRaw.ToRawString(filterForVehicleId);
+                var filterExprForVehicleId = ReqlRaw.FromRawString(filterSerializedForVehicleId);
+
+                Cursor<object> VehicleData = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForVehicleId).Run(_rethinkDbConnection);
+                if (VehicleData.BufferedSize == 0)
+                    return ReturnResponse.ErrorResponse("Vehicles does not exists in database.", StatusCodes.Status404NotFound);
+            }
+
+            ReqlFunction1 filterForLive = null;
+            if (model.status == "ideal")
+            {
+                filterForLive = expr => expr["isLive"].Eq(false);
+                filterSerializedForLive = ReqlRaw.ToRawString(filterForLive);
+                var filterExpr = ReqlRaw.FromRawString(filterSerializedForLive);
+            }
+
+            if (string.IsNullOrEmpty(model.institutionId))
+            {
+                if (!string.IsNullOrEmpty(Convert.ToString(model.startAt)) && !string.IsNullOrEmpty(Convert.ToString(model.endAt)) && DateTime.TryParse(Convert.ToString(model.startAt), out startDate) && DateTime.TryParse(Convert.ToString(model.endAt), out endDate))
+                {
+                    ReqlFunction1 filterForStartDate = expr => expr["timestamp"].Ge(startDate);
+                    string filterSerializedForStartDate = ReqlRaw.ToRawString(filterForStartDate);
+                    var filterExprForStartDate = ReqlRaw.FromRawString(filterSerializedForStartDate);
+
+                    ReqlFunction1 filterForEndDate = expr => expr["timestamp"].Le(endDate);
+                    string filterSerializedForEndDate = ReqlRaw.ToRawString(filterForEndDate);
+                    var filterExprForEndDate = ReqlRaw.FromRawString(filterSerializedForEndDate);
+
+                    if (string.IsNullOrEmpty(vehicleId))
+                    {
+                        if (string.IsNullOrEmpty(model.status))
+                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterForStartDate).Filter(filterForEndDate).Run(_rethinkDbConnection);
+                        else
+                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterForLive).Filter(filterForStartDate).Filter(filterForEndDate).Run(_rethinkDbConnection);
+                    }
+                    else
+                    {
+                        if (string.IsNullOrEmpty(model.status))
+                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterForStartDate).Filter(filterForEndDate).Filter(filterForVehicleId).Run(_rethinkDbConnection);
+                        else
+                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterForLive).Filter(filterForStartDate).Filter(filterForEndDate).Filter(filterForVehicleId).Run(_rethinkDbConnection);
+                    }
+                }
+                else
+                {
+                    if (string.IsNullOrEmpty(vehicleId))
+                    {
+                        if (string.IsNullOrEmpty(model.status))
+                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Run(_rethinkDbConnection);
+                        else
+                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterForLive).Run(_rethinkDbConnection);
+                    }
+                    else
+                    {
+                        if (string.IsNullOrEmpty(model.status))
+                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterForVehicleId).Run(_rethinkDbConnection);
+                        else
+                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterForLive).Filter(filterForVehicleId).Run(_rethinkDbConnection);
+                    }
+                }
+            }
+            else
+            {
+                ReqlFunction1 filterForinstitutionId = expr => expr["institutionId"].Eq(Convert.ToInt32(model.institutionId));
+                string filterSerializedForinstitutionId = ReqlRaw.ToRawString(filterForinstitutionId);
+                var filterExprForinstitutionId = ReqlRaw.FromRawString(filterSerializedForinstitutionId);
+
+                Cursor<object> InstitutionData = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Run(_rethinkDbConnection);
+                if (InstitutionData.BufferedSize == 0)
+                    return ReturnResponse.ErrorResponse("Institution does not exists in database.", StatusCodes.Status404NotFound);
 
                 if (!string.IsNullOrEmpty(Convert.ToString(model.startAt)) && !string.IsNullOrEmpty(Convert.ToString(model.endAt)) && DateTime.TryParse(Convert.ToString(model.startAt), out startDate) && DateTime.TryParse(Convert.ToString(model.endAt), out endDate))
                 {
@@ -260,37 +220,66 @@ namespace TrackService.RethinkDb_Changefeed
                     string filterSerializedForEndDate = ReqlRaw.ToRawString(filterForEndDate);
                     var filterExprForEndDate = ReqlRaw.FromRawString(filterSerializedForEndDate);
 
-                    vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExpr).Filter(filterForStartDate).Filter(filterForEndDate).Run(_rethinkDbConnection);
+                    if (string.IsNullOrEmpty(vehicleId))
+                    {
+                        if (string.IsNullOrEmpty(model.status))
+                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterForStartDate).Filter(filterForEndDate).Run(_rethinkDbConnection);
+                        else
+                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterForLive).Filter(filterForStartDate).Filter(filterForEndDate).Run(_rethinkDbConnection);
+                    }
+                    else
+                    {
+                        if (string.IsNullOrEmpty(model.status))
+                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterForStartDate).Filter(filterForEndDate).Filter(filterForVehicleId).Run(_rethinkDbConnection);
+                        else
+                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterForLive).Filter(filterForStartDate).Filter(filterForEndDate).Filter(filterForVehicleId).Run(_rethinkDbConnection);
+                    }
                 }
                 else
                 {
-                    vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExpr).Run(_rethinkDbConnection);
+                    if (string.IsNullOrEmpty(vehicleId))
+                    {
+                        if (string.IsNullOrEmpty(model.status))
+                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Run(_rethinkDbConnection);
+                        else
+                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterForLive).Run(_rethinkDbConnection);
+                    }
+                    else
+                    {
+                        if (string.IsNullOrEmpty(model.status))
+                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterForVehicleId).Run(_rethinkDbConnection);
+                        else
+                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterForLive).Filter(filterForVehicleId).Run(_rethinkDbConnection);
+                    }
                 }
+            }
+            return vehicles;
+        }
 
+        private List<VehicleDetails> GetVehicleList(Cursor<object> vehicles)
+        {
+            try
+            {
                 List<VehicleDetails> listVehicles = new List<VehicleDetails>();
                 List<CoordinatesDetail> listCoordinates = new List<CoordinatesDetail>();
-
-                int totalCount = 0;
+                
                 foreach (var vehicle in vehicles)
                 {
-                    totalCount++;
                     string VehicleId = string.Empty, institutionId = string.Empty, DeviceId = string.Empty;
                     foreach (var value in JObject.Parse(vehicle.ToString()).Children())
                     {
-
                         if (((JProperty)value).Name.ToString() == "id")
                         {
                             ReqlFunction1 cordinatefilter = expr => expr["mobileId"].Eq(((JProperty)value).Value.ToString());
                             string cordinatefilterSerialized = ReqlRaw.ToRawString(cordinatefilter);
                             var cordinatefilterExpr = ReqlRaw.FromRawString(cordinatefilterSerialized);
                             Cursor<object> coordinates = _rethinkDbSingleton.Db(DATABASE_NAME).Table(CORDINATE_TABLE_NAME).Filter(cordinatefilterExpr).Run(_rethinkDbConnection);
-
+                            
                             foreach (var coordinate in coordinates)
                             {
                                 string latitude = string.Empty, longitude = string.Empty, timestamp = string.Empty;
                                 foreach (var cordinatevalue in JObject.Parse(coordinate.ToString()).Children())
                                 {
-
                                     if (((JProperty)cordinatevalue).Name.ToString() == "latitude")
                                     {
                                         latitude = ((JProperty)cordinatevalue).Value.ToString();
@@ -308,7 +297,7 @@ namespace TrackService.RethinkDb_Changefeed
                                             {
                                                 var UnixTime = ((JProperty)timestampVal).Value.ToString();
 
-                                                System.DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
+                                                DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
                                                 timestamp = dateTime.AddSeconds(Convert.ToDouble(UnixTime)).ToLocalTime().ToString();
                                                 break;
                                             }
@@ -336,37 +325,29 @@ namespace TrackService.RethinkDb_Changefeed
                             institutionId = ((JProperty)value).Value.ToString();
                         }
                     }
-
+                    List<CoordinatesDetail> coordinatesDetailsList = new List<CoordinatesDetail>();
+                    var latestCoodinates = listCoordinates.OrderByDescending(x => x.timestamp).FirstOrDefault();
+                    if (latestCoodinates != null)
+                    {
+                        CoordinatesDetail coordinatesDetail = new CoordinatesDetail();
+                        coordinatesDetail.latitude = latestCoodinates.latitude;
+                        coordinatesDetail.longitude = latestCoodinates.longitude;
+                        coordinatesDetail.timestamp = latestCoodinates.timestamp;
+                        coordinatesDetailsList.Add(coordinatesDetail);
+                    }
                     listVehicles.Add(new VehicleDetails
                     {
                         deviceId = DeviceId,
                         vehicleId = VehicleId,
                         institutionId = institutionId,
-                        coordinates = listCoordinates
+                        coordinates = coordinatesDetailsList
                     });
                 }
-
-                var page = new Pagination
-                {
-                    offset = pageInfo.offset,
-                    limit = pageInfo.limit,
-                    total = totalCount
-                };
-
-                if (listVehicles == null || listVehicles.Count == 0)
-                    return ReturnResponse.ErrorResponse("Vehicle not found.", StatusCodes.Status404NotFound);
-
-                oVehicleResponse.status = true;
-                oVehicleResponse.message = "Vehicle retrived successfully.";
-                oVehicleResponse.statusCode = StatusCodes.Status200OK;
-                oVehicleResponse.pagination = page;
-                oVehicleResponse.data = listVehicles;
-                return oVehicleResponse;
-
+                return listVehicles;
             }
             catch (Exception ex)
             {
-                return ReturnResponse.ExceptionResponse(ex);
+                throw ex;
             }
         }
 
@@ -385,6 +366,7 @@ namespace TrackService.RethinkDb_Changefeed
             }
             return institutionId;
         }
+
         public bool CheckVehicleExists(string vehicleId)
         {
             ReqlFunction1 filter = expr => expr["vehicleId"].Eq(Convert.ToInt32(vehicleId));
@@ -412,7 +394,7 @@ namespace TrackService.RethinkDb_Changefeed
         // This is called from background service Monitor Vehicle
         public List<string> UpdateVehicleStatus()
         {
-            ReqlFunction1 filter = expr => expr["timestamp"].Le(DateTime.UtcNow.AddMinutes(-1));
+            ReqlFunction1 filter = expr => expr["timestamp"].Le(DateTime.UtcNow.AddMinutes(-10));
 
             string filterSerialized = ReqlRaw.ToRawString(filter);
             var filterExpr = ReqlRaw.FromRawString(filterSerialized);
@@ -645,15 +627,46 @@ namespace TrackService.RethinkDb_Changefeed
                 return false;
         }
 
-        public Task<dynamic> ClearLiveTrackingDatabase()
+        public Task<dynamic> ClearLiveTrackingDatabase(string vehicleId)
         {
             try
             {
-                _rethinkDbSingleton.Db(DATABASE_NAME).Table(CORDINATE_TABLE_NAME).Delete().Run(_rethinkDbConnection);
-                _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Delete().Run(_rethinkDbConnection);
-                return ReturnResponse.SuccessResponse("All records removed from live tracking service successfully.", false);
+                if (string.IsNullOrEmpty(vehicleId))
+                {
+                    _rethinkDbSingleton.Db(DATABASE_NAME).Table(CORDINATE_TABLE_NAME).Delete().Run(_rethinkDbConnection);
+                    _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Delete().Run(_rethinkDbConnection);
+                }
+                else
+                {
+                    string mobileId = string.Empty;
+                    ReqlFunction1 filterForVehicleId = expr => expr["vehicleId"].Eq(Convert.ToInt32(vehicleId));
+                    string filterSerializedForVehicleId = ReqlRaw.ToRawString(filterForVehicleId);
+                    var filterExprForVehicleId = ReqlRaw.FromRawString(filterSerializedForVehicleId);
+
+                    Cursor<object> VehicleData = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForVehicleId).Run(_rethinkDbConnection);
+                    if (VehicleData.BufferedSize == 0)
+                        return ReturnResponse.ErrorResponse("Vehicles does not exists in database.", StatusCodes.Status404NotFound);
+
+                    foreach (var item in VehicleData)
+                    {
+                        foreach (var value in JObject.Parse(item.ToString()).Children())
+                        {
+                            if (((JProperty)value).Name.ToString() == "id")
+                            {
+                                mobileId = ((JProperty)value).Value.ToString();
+                            }
+                        }
+                        ReqlFunction1 filter = expr => expr["mobileId"].Eq(mobileId);
+                        string filterSerialized = ReqlRaw.ToRawString(filter);
+                        var filterExpr = ReqlRaw.FromRawString(filterSerialized);
+                        _rethinkDbSingleton.Db(DATABASE_NAME).Table(CORDINATE_TABLE_NAME).Filter(filter).Delete().Run(_rethinkDbConnection);
+                    }
+
+                    _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterForVehicleId).Delete().Run(_rethinkDbConnection);
+                }
+                return ReturnResponse.SuccessResponse("Records removed from live tracking service successfully.", false);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 return ReturnResponse.ExceptionResponse(ex);
             }

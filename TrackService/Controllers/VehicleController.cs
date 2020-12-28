@@ -25,25 +25,17 @@ namespace TrackService.Controllers
         }
 
         [HttpGet]
-        [Route("vehicles/ideals")]
-        public async Task<IActionResult> VehicleStatus([FromQuery] Pagination pageInfo, [FromQuery] IdleModel IdleModel)
+        [Route("tracking/vehicles/{vehicleId?}")]
+        public IActionResult VehicleStatus(string vehicleId, [FromQuery] Pagination pageInfo, [FromQuery] IdleModel IdleModel)
         {
-            if (string.IsNullOrEmpty(Convert.ToString(IdleModel.institutionId)))
-            {
-                dynamic response = await _coordinateChangeFeedbackBackgroundService.GetAllVehicleDetail(pageInfo, IdleModel);
-                return StatusCode((int)response.statusCode, response);
-            }
-            else
-            {
-                dynamic response = await _coordinateChangeFeedbackBackgroundService.GetAllVehicleByInstitutionId(IdleModel);
-                return StatusCode((int)response.statusCode, response);
-            }
+            dynamic response = _coordinateChangeFeedbackBackgroundService.GetVehicles(vehicleId, pageInfo, IdleModel);
+            return StatusCode((int)response.statusCode, response);
         }
         [HttpDelete]
-        [Route("vehicles/remove")]
-        public async Task<IActionResult> ClearLiveDatabase()
+        [Route("tracking/vehicles/{vehicleId?}")]
+        public async Task<IActionResult> ClearLiveDatabase(string vehicleId)
         {
-            dynamic response = await _coordinateChangeFeedbackBackgroundService.ClearLiveTrackingDatabase();
+            dynamic response = await _coordinateChangeFeedbackBackgroundService.ClearLiveTrackingDatabase(vehicleId);
             return StatusCode((int)response.statusCode, response);
         }
     }
