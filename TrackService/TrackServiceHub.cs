@@ -7,14 +7,7 @@ using TrackService.RethinkDb_Abstractions;
 using TrackService.Helper.ConnectionMapping;
 using TrackService.Models;
 using Microsoft.AspNetCore.Authorization;
-using Obfuscation;
-using TrackService.RethinkDb_Changefeed.Model.Common;
-using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Newtonsoft.Json;
-using System.Security.Claims;
-using Newtonsoft.Json.Linq;
-using System.Collections.Generic;
 using Microsoft.AspNetCore.Http;
 
 namespace TrackService

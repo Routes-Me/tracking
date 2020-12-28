@@ -459,7 +459,6 @@ namespace TrackService.RethinkDb_Changefeed
                 string filterSerialized = ReqlRaw.ToRawString(filter);
                 var filterExpr = ReqlRaw.FromRawString(filterSerialized);
                 Cursor<object> coordinates = _rethinkDbSingleton.Db(DATABASE_NAME).Table(CORDINATE_TABLE_NAME).Filter(filterExpr).Run(_rethinkDbConnection);
-
                 List<ArchiveCoordinates> archiveCoordinates = new List<ArchiveCoordinates>();
                 decimal latitude = 0, longitude = 0;
                 int deviceId = 0, vehicleId = 0;
@@ -527,14 +526,13 @@ namespace TrackService.RethinkDb_Changefeed
 
                 if (archiveCoordinates.Count > 0 && archiveCoordinates != null)
                 {
-
                     var client = new RestClient(_appSettings.Host + _dependencies.ArchiveTrackServiceUrl);
                     var request = new RestRequest(Method.POST);
                     string jsonToSend = JsonConvert.SerializeObject(archiveCoordinates);
                     request.AddParameter("application/json; charset=utf-8", jsonToSend, ParameterType.RequestBody);
                     request.RequestFormat = DataFormat.Json;
                     IRestResponse response = client.Execute(request);
-                    if (response.StatusCode != HttpStatusCode.Created)
+                    if (response.StatusCode == HttpStatusCode.Created)
                     {
                         _rethinkDbSingleton.Db(DATABASE_NAME).Table(CORDINATE_TABLE_NAME).Filter(filterExpr).Delete().Run(_rethinkDbConnection);
                     }
@@ -647,6 +645,18 @@ namespace TrackService.RethinkDb_Changefeed
                 return false;
         }
 
-
+        public Task<dynamic> ClearLiveTrackingDatabase()
+        {
+            try
+            {
+                _rethinkDbSingleton.Db(DATABASE_NAME).Table(CORDINATE_TABLE_NAME).Delete().Run(_rethinkDbConnection);
+                _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Delete().Run(_rethinkDbConnection);
+                return ReturnResponse.SuccessResponse("All records removed from live tracking service successfully.", false);
+            }
+            catch(Exception ex)
+            {
+                return ReturnResponse.ExceptionResponse(ex);
+            }
+        }
     }
 }

@@ -24,5 +24,6 @@ namespace TrackService.RethinkDb_Abstractions
         int IdDecryption(string id);
         string IdEncryption(int id);
         bool CheckVehicleByInstitutionExists(string vehicleId, string institutionId);
+        Task<dynamic> ClearLiveTrackingDatabase();
     }
 }

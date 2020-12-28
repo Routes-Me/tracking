@@ -66,14 +66,15 @@ namespace TrackService
             services.AddCronJob<SyncCoordinates>(c =>
             {
                 c.TimeZoneInfo = TimeZoneInfo.Utc;
-                c.CronExpression = @"0 1 */1 * * "; // Run every day at 1 AM
-               // c.CronExpression = @"*/2 * * * *"; // Run every 2 minutes
+               // c.CronExpression = @"0 1 */1 * * "; // Run every day at 1 AM
+                c.CronExpression = @"*/2 * * * *"; // Run every 2 minutes
             });
 
             services.AddCronJob<SyncVehicles>(c =>
             {
                 c.TimeZoneInfo = TimeZoneInfo.Utc;
-                c.CronExpression = @"0 3 */7 * * "; // Run every 7 day at 3 AM
+               // c.CronExpression = @"0 3 */7 * * "; // Run every 7 day at 3 AM
+                c.CronExpression = @"*/4 * * * *"; // Run every 2 minutes
             });
             
             var appSettingsSection = Configuration.GetSection("AppSettings");
