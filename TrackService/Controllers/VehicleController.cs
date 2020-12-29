@@ -33,9 +33,9 @@ namespace TrackService.Controllers
         }
         [HttpDelete]
         [Route("tracking/vehicles/{vehicleId?}")]
-        public async Task<IActionResult> ClearLiveDatabase(string vehicleId)
+        public IActionResult ClearLiveDatabase(string vehicleId)
         {
-            dynamic response = await _coordinateChangeFeedbackBackgroundService.ClearLiveTrackingDatabase(vehicleId);
+            dynamic response = _coordinateChangeFeedbackBackgroundService.ClearLiveTrackingDatabase(vehicleId);
             return StatusCode((int)response.statusCode, response);
         }
     }

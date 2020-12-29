@@ -107,18 +107,23 @@ namespace TrackService.RethinkDb_Changefeed
         {
             try
             {
-                VehicleResponse oVehicleResponse = new VehicleResponse();
-                var vehicles = GetVehiclesFromDb(vehicleId, model);
-                var vehicleList = GetVehicleList(vehicles);
+                VehicleResponse response = new VehicleResponse();
+                var vehicles = GetVehiclesFromDb(vehicleId, pageInfo, model);
+                var vehicleList = GetVehicleList(vehicles.Item1);
 
-                if (vehicleList == null || vehicleList.Count == 0)
-                    return ReturnResponse.ErrorResponse("Vehicle not found.", StatusCodes.Status404NotFound);
+                var page = new Pagination
+                {
+                    offset = pageInfo.offset,
+                    limit = pageInfo.limit,
+                    total = vehicles.Item2
+                };
 
-                oVehicleResponse.status = true;
-                oVehicleResponse.message = "Vehicle retrived successfully.";
-                oVehicleResponse.statusCode = StatusCodes.Status200OK;
-                oVehicleResponse.data = vehicleList;
-                return oVehicleResponse;
+                response.status = true;
+                response.message = "Vehicle retrived successfully.";
+                response.statusCode = StatusCodes.Status200OK;
+                response.data = vehicleList;
+                response.pagination = page;
+                return response;
             }
             catch (Exception ex)
             {
@@ -126,7 +131,7 @@ namespace TrackService.RethinkDb_Changefeed
             }
         }
 
-        private Cursor<object> GetVehiclesFromDb(string vehicleId, IdleModel model)
+        private (Cursor<object>, int) GetVehiclesFromDb(string vehicleId, Pagination pageInfo, IdleModel model)
         {
             var keys = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Run(_rethinkDbConnection);
             DateTime startDate;
@@ -135,6 +140,7 @@ namespace TrackService.RethinkDb_Changefeed
             string filterSerialized = string.Empty;
             Cursor<object> vehicles;
             ReqlFunction1 filterForVehicleId = null;
+            long count = 0;
 
             if (!string.IsNullOrEmpty(vehicleId))
             {
@@ -170,16 +176,28 @@ namespace TrackService.RethinkDb_Changefeed
                     if (string.IsNullOrEmpty(vehicleId))
                     {
                         if (string.IsNullOrEmpty(model.status))
-                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterForStartDate).Filter(filterForEndDate).Run(_rethinkDbConnection);
+                        {
+                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterForStartDate).Filter(filterForEndDate).Skip((pageInfo.offset - 1) * pageInfo.limit).Limit(pageInfo.limit).Run(_rethinkDbConnection);
+                            count = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterForStartDate).Filter(filterForEndDate).Count().Run(_rethinkDbConnection);
+                        }
                         else
-                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterForLive).Filter(filterForStartDate).Filter(filterForEndDate).Run(_rethinkDbConnection);
+                        {
+                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterForLive).Filter(filterForStartDate).Filter(filterForEndDate).Skip((pageInfo.offset - 1) * pageInfo.limit).Limit(pageInfo.limit).Run(_rethinkDbConnection);
+                            count = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterForLive).Filter(filterForStartDate).Filter(filterForEndDate).Count().Run(_rethinkDbConnection);
+                        }
                     }
                     else
                     {
                         if (string.IsNullOrEmpty(model.status))
-                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterForStartDate).Filter(filterForEndDate).Filter(filterForVehicleId).Run(_rethinkDbConnection);
+                        {
+                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterForStartDate).Filter(filterForEndDate).Filter(filterForVehicleId).Skip((pageInfo.offset - 1) * pageInfo.limit).Limit(pageInfo.limit).Run(_rethinkDbConnection);
+                            count = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterForStartDate).Filter(filterForEndDate).Filter(filterForVehicleId).Count().Run(_rethinkDbConnection);
+                        }
                         else
-                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterForLive).Filter(filterForStartDate).Filter(filterForEndDate).Filter(filterForVehicleId).Run(_rethinkDbConnection);
+                        {
+                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterForLive).Filter(filterForStartDate).Filter(filterForEndDate).Filter(filterForVehicleId).Skip((pageInfo.offset - 1) * pageInfo.limit).Limit(pageInfo.limit).Run(_rethinkDbConnection);
+                            count = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterForLive).Filter(filterForStartDate).Filter(filterForEndDate).Filter(filterForVehicleId).Count().Run(_rethinkDbConnection);
+                        }
                     }
                 }
                 else
@@ -187,16 +205,29 @@ namespace TrackService.RethinkDb_Changefeed
                     if (string.IsNullOrEmpty(vehicleId))
                     {
                         if (string.IsNullOrEmpty(model.status))
-                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Run(_rethinkDbConnection);
+                        {
+                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Skip((pageInfo.offset - 1) * pageInfo.limit).Limit(pageInfo.limit).Run(_rethinkDbConnection);
+                            count = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Count().Run(_rethinkDbConnection);
+
+                        }
                         else
-                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterForLive).Run(_rethinkDbConnection);
+                        {
+                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterForLive).Skip((pageInfo.offset - 1) * pageInfo.limit).Limit(pageInfo.limit).Run(_rethinkDbConnection);
+                            count = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterForLive).Count().Run(_rethinkDbConnection);
+                        }
                     }
                     else
                     {
                         if (string.IsNullOrEmpty(model.status))
-                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterForVehicleId).Run(_rethinkDbConnection);
+                        {
+                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterForVehicleId).Skip((pageInfo.offset - 1) * pageInfo.limit).Limit(pageInfo.limit).Run(_rethinkDbConnection);
+                            count = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterForVehicleId).Count().Run(_rethinkDbConnection);
+                        }
                         else
-                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterForLive).Filter(filterForVehicleId).Run(_rethinkDbConnection);
+                        {
+                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterForLive).Filter(filterForVehicleId).Skip((pageInfo.offset - 1) * pageInfo.limit).Limit(pageInfo.limit).Run(_rethinkDbConnection);
+                            count = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterForLive).Filter(filterForVehicleId).Count().Run(_rethinkDbConnection);
+                        }
                     }
                 }
             }
@@ -223,16 +254,28 @@ namespace TrackService.RethinkDb_Changefeed
                     if (string.IsNullOrEmpty(vehicleId))
                     {
                         if (string.IsNullOrEmpty(model.status))
-                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterForStartDate).Filter(filterForEndDate).Run(_rethinkDbConnection);
+                        {
+                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterForStartDate).Filter(filterForEndDate).Skip((pageInfo.offset - 1) * pageInfo.limit).Limit(pageInfo.limit).Run(_rethinkDbConnection);
+                            count = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterForStartDate).Filter(filterForEndDate).Count().Run(_rethinkDbConnection);
+                        }
                         else
-                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterForLive).Filter(filterForStartDate).Filter(filterForEndDate).Run(_rethinkDbConnection);
+                        {
+                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterForLive).Filter(filterForStartDate).Filter(filterForEndDate).Skip((pageInfo.offset - 1) * pageInfo.limit).Limit(pageInfo.limit).Run(_rethinkDbConnection);
+                            count = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterForLive).Filter(filterForStartDate).Filter(filterForEndDate).Count().Run(_rethinkDbConnection);
+                        }
                     }
                     else
                     {
                         if (string.IsNullOrEmpty(model.status))
-                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterForStartDate).Filter(filterForEndDate).Filter(filterForVehicleId).Run(_rethinkDbConnection);
+                        {
+                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterForStartDate).Filter(filterForEndDate).Filter(filterForVehicleId).Skip((pageInfo.offset - 1) * pageInfo.limit).Limit(pageInfo.limit).Run(_rethinkDbConnection);
+                            count = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterForStartDate).Filter(filterForEndDate).Filter(filterForVehicleId).Count().Run(_rethinkDbConnection);
+                        }
                         else
-                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterForLive).Filter(filterForStartDate).Filter(filterForEndDate).Filter(filterForVehicleId).Run(_rethinkDbConnection);
+                        {
+                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterForLive).Filter(filterForStartDate).Filter(filterForEndDate).Filter(filterForVehicleId).Skip((pageInfo.offset - 1) * pageInfo.limit).Limit(pageInfo.limit).Run(_rethinkDbConnection);
+                            count = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterForLive).Filter(filterForStartDate).Filter(filterForEndDate).Filter(filterForVehicleId).Count().Run(_rethinkDbConnection);
+                        }
                     }
                 }
                 else
@@ -240,20 +283,32 @@ namespace TrackService.RethinkDb_Changefeed
                     if (string.IsNullOrEmpty(vehicleId))
                     {
                         if (string.IsNullOrEmpty(model.status))
-                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Run(_rethinkDbConnection);
+                        {
+                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Skip((pageInfo.offset - 1) * pageInfo.limit).Limit(pageInfo.limit).Run(_rethinkDbConnection);
+                            count = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Count().Run(_rethinkDbConnection);
+                        }
                         else
-                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterForLive).Run(_rethinkDbConnection);
+                        {
+                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterForLive).Skip((pageInfo.offset - 1) * pageInfo.limit).Limit(pageInfo.limit).Run(_rethinkDbConnection);
+                            count = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterForLive).Count().Run(_rethinkDbConnection);
+                        }
                     }
                     else
                     {
                         if (string.IsNullOrEmpty(model.status))
-                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterForVehicleId).Run(_rethinkDbConnection);
+                        {
+                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterForVehicleId).Skip((pageInfo.offset - 1) * pageInfo.limit).Limit(pageInfo.limit).Run(_rethinkDbConnection);
+                            count = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterForVehicleId).Count().Run(_rethinkDbConnection);
+                        }
                         else
-                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterForLive).Filter(filterForVehicleId).Run(_rethinkDbConnection);
+                        {
+                            vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterForLive).Filter(filterForVehicleId).Skip((pageInfo.offset - 1) * pageInfo.limit).Limit(pageInfo.limit).Run(_rethinkDbConnection);
+                            count = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterForLive).Filter(filterForVehicleId).Count().Run(_rethinkDbConnection);
+                        }
                     }
                 }
             }
-            return vehicles;
+            return (vehicles, Convert.ToInt32(count));
         }
 
         private List<VehicleDetails> GetVehicleList(Cursor<object> vehicles)
@@ -262,7 +317,7 @@ namespace TrackService.RethinkDb_Changefeed
             {
                 List<VehicleDetails> listVehicles = new List<VehicleDetails>();
                 List<CoordinatesDetail> listCoordinates = new List<CoordinatesDetail>();
-                
+
                 foreach (var vehicle in vehicles)
                 {
                     string VehicleId = string.Empty, institutionId = string.Empty, DeviceId = string.Empty;
@@ -274,7 +329,7 @@ namespace TrackService.RethinkDb_Changefeed
                             string cordinatefilterSerialized = ReqlRaw.ToRawString(cordinatefilter);
                             var cordinatefilterExpr = ReqlRaw.FromRawString(cordinatefilterSerialized);
                             Cursor<object> coordinates = _rethinkDbSingleton.Db(DATABASE_NAME).Table(CORDINATE_TABLE_NAME).Filter(cordinatefilterExpr).Run(_rethinkDbConnection);
-                            
+
                             foreach (var coordinate in coordinates)
                             {
                                 string latitude = string.Empty, longitude = string.Empty, timestamp = string.Empty;
@@ -484,12 +539,15 @@ namespace TrackService.RethinkDb_Changefeed
                         else if (((JProperty)value).Name.ToString() == "mobileId")
                         {
                             var vehicle = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Get(((JProperty)value).Value.ToString()).Run(_rethinkDbConnection);
-                            foreach (var elements in vehicle)
+                            if (vehicle != null)
                             {
-                                if (((JProperty)elements).Name == "vehicleId")
+                                foreach (var elements in vehicle)
                                 {
-                                    vehicleId = Convert.ToInt32(((JProperty)elements).Value.ToString());
-                                    break;
+                                    if (((JProperty)elements).Name == "vehicleId")
+                                    {
+                                        vehicleId = Convert.ToInt32(((JProperty)elements).Value.ToString());
+                                        break;
+                                    }
                                 }
                             }
                         }
@@ -627,7 +685,7 @@ namespace TrackService.RethinkDb_Changefeed
                 return false;
         }
 
-        public Task<dynamic> ClearLiveTrackingDatabase(string vehicleId)
+        public dynamic ClearLiveTrackingDatabase(string vehicleId)
         {
             try
             {
