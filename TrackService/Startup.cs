@@ -20,6 +20,8 @@ using Newtonsoft.Json;
 using Microsoft.AspNetCore.Http;
 using System.Threading.Tasks;
 using TrackService.Helper;
+using TrackService.RethinkDb_Changefeed.DataAccess.Abstraction;
+using TrackService.RethinkDb_Changefeed.DataAccess.Repository;
 
 namespace TrackService
 {
@@ -48,6 +50,8 @@ namespace TrackService
             services.AddSingleton<IRethinkDbConnectionFactory, RethinkDbConnectionFactory>();
             services.AddSingleton<IRethinkDbStore, RethinkDbStore>();
             services.AddSingleton<TrackServiceHub, TrackServiceHub>();
+            services.AddSingleton<IDataAccessRepository, DataAccessRepository>();
+            
 
             services.AddCors(c =>
             {
