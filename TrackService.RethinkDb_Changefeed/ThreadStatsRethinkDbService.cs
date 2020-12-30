@@ -51,11 +51,11 @@ namespace TrackService.RethinkDb_Changefeed
             }
         }
 
-        public dynamic GetVehicles(string vehicleId, Pagination pageInfo, IdleModel model)
+        public dynamic GetVehicles(string vehicleId, Pagination pageInfo, IdleModel idleModel)
         {
             try
             {
-                return _dataAccessRepository.GetVehicles(vehicleId, pageInfo, model);
+                return _dataAccessRepository.GetVehicles(vehicleId, pageInfo, idleModel);
             }
             catch (Exception ex)
             {
@@ -138,11 +138,11 @@ namespace TrackService.RethinkDb_Changefeed
             catch (Exception) { }
         }
 
-        public Task InsertMobiles(MobilesModel model)
+        public Task InsertMobiles(MobilesModel mobileModel)
         {
             try
             {
-                return _dataAccessRepository.InsertMobiles(model);
+                return _dataAccessRepository.InsertMobiles(mobileModel);
             }
             catch (Exception ex)
             {

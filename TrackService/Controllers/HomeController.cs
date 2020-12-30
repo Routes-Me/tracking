@@ -8,7 +8,7 @@ namespace TrackService.Controllers
     [Route("[controller]")]
     public class HomeController : ControllerBase
     {
-        public readonly IWebHostEnvironment _hostingEnv;
+        private readonly IWebHostEnvironment _hostingEnv;
         public HomeController(IWebHostEnvironment hostingEnv)
         {
             _hostingEnv = hostingEnv;

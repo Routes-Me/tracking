@@ -26,9 +26,9 @@ namespace TrackService.Controllers
 
         [HttpGet]
         [Route("tracking/vehicles/{vehicleId?}")]
-        public IActionResult VehicleStatus(string vehicleId, [FromQuery] Pagination pageInfo, [FromQuery] IdleModel IdleModel)
+        public IActionResult VehicleStatus(string vehicleId, [FromQuery] Pagination pageInfo, [FromQuery] IdleModel idleModel)
         {
-            dynamic response = _coordinateChangeFeedbackBackgroundService.GetVehicles(vehicleId, pageInfo, IdleModel);
+            dynamic response = _coordinateChangeFeedbackBackgroundService.GetVehicles(vehicleId, pageInfo, idleModel);
             return StatusCode((int)response.statusCode, response);
         }
         [HttpDelete]

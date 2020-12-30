@@ -12,7 +12,7 @@ namespace TrackService.RethinkDb_Changefeed.DataAccess.Abstraction
         Task EnsureDatabaseCreated();
         Task InsertCordinates(CordinatesModel trackingStats);
         Task<IChangefeed<Coordinates>> GetCoordinatesChangeFeedback(CancellationToken cancellationToken);
-        dynamic GetVehicles(string vehicleId, Pagination pageInfo, IdleModel model);
+        dynamic GetVehicles(string vehicleId, Pagination pageInfo, IdleModel idleModel);
         string GetInstitutionId(string mobileId);
         bool CheckVehicleExists(string vehicleId);
         bool CheckInstitutionExists(string institutionId);
@@ -20,7 +20,7 @@ namespace TrackService.RethinkDb_Changefeed.DataAccess.Abstraction
         void ChangeVehicleStatus(string vehicleId);
         void SyncCoordinatesToArchiveTable();
         void SyncVehiclesToArchiveTable();
-        Task InsertMobiles(MobilesModel model);
+        Task InsertMobiles(MobilesModel mobileModel);
         bool SuperInstitutions(string tokenInstitutionId);
         int IdDecryption(string id);
         string IdEncryption(int id);

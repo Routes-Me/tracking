@@ -197,10 +197,10 @@ namespace TrackService.RethinkDb_Changefeed.DataAccess.Repository
             return vehicleId;
         }
 
-        public dynamic GetVehicles(string vehicleId, Pagination pageInfo, IdleModel model)
+        public dynamic GetVehicles(string vehicleId, Pagination pageInfo, IdleModel idleModel)
         {
             VehicleResponse response = new VehicleResponse();
-            var vehicles = GetVehiclesFromDb(vehicleId, pageInfo, model);
+            var vehicles = GetVehiclesFromDb(vehicleId, pageInfo, idleModel);
             var vehicleList = GetVehicleList(vehicles.Item1);
 
             var page = new Pagination
@@ -256,12 +256,12 @@ namespace TrackService.RethinkDb_Changefeed.DataAccess.Repository
             return Task.CompletedTask;
         }
 
-        public Task InsertMobiles(MobilesModel model)
+        public Task InsertMobiles(MobilesModel mobileModel)
         {
             Cursor<object> vehicle = null;
             Task.Run(() =>
             {
-                vehicle = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(new { vehicleId = model.vehicleId }).Run(_rethinkDbConnection);
+                vehicle = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(new { vehicleId = mobileModel.vehicleId }).Run(_rethinkDbConnection);
             }).Wait();
             if (vehicle.BufferedSize == 0)
             {
@@ -269,8 +269,8 @@ namespace TrackService.RethinkDb_Changefeed.DataAccess.Repository
                 {
                     _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Insert(new Mobiles
                     {
-                        institutionId = model.institutionId,
-                        vehicleId = model.vehicleId,
+                        institutionId = mobileModel.institutionId,
+                        vehicleId = mobileModel.vehicleId,
                         isLive = true,
                         timestamp = DateTime.UtcNow
                     }).Run(_rethinkDbConnection);
@@ -341,7 +341,7 @@ namespace TrackService.RethinkDb_Changefeed.DataAccess.Repository
                             {
                                 var UnixTime = ((JProperty)timestampVal).Value.ToString();
 
-                                System.DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
+                                DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
                                 timestamp = dateTime.AddSeconds(Convert.ToDouble(UnixTime)).ToLocalTime();
                                 break;
                             }
@@ -427,7 +427,7 @@ namespace TrackService.RethinkDb_Changefeed.DataAccess.Repository
             return idealVehicleList;
         }
 
-        private (Cursor<object>, int) GetVehiclesFromDb(string vehicleId, Pagination pageInfo, IdleModel model)
+        private (Cursor<object>, int) GetVehiclesFromDb(string vehicleId, Pagination pageInfo, IdleModel idleModel)
         {
             var keys = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Run(_rethinkDbConnection);
             DateTime startDate;
@@ -450,16 +450,16 @@ namespace TrackService.RethinkDb_Changefeed.DataAccess.Repository
             }
 
             ReqlFunction1 filterForLive = null;
-            if (model.status == "ideal")
+            if (idleModel.status == "ideal")
             {
                 filterForLive = expr => expr["isLive"].Eq(false);
                 filterSerializedForLive = ReqlRaw.ToRawString(filterForLive);
                 var filterExpr = ReqlRaw.FromRawString(filterSerializedForLive);
             }
 
-            if (string.IsNullOrEmpty(model.institutionId))
+            if (string.IsNullOrEmpty(idleModel.institutionId))
             {
-                if (!string.IsNullOrEmpty(Convert.ToString(model.startAt)) && !string.IsNullOrEmpty(Convert.ToString(model.endAt)) && DateTime.TryParse(Convert.ToString(model.startAt), out startDate) && DateTime.TryParse(Convert.ToString(model.endAt), out endDate))
+                if (!string.IsNullOrEmpty(Convert.ToString(idleModel.startAt)) && !string.IsNullOrEmpty(Convert.ToString(idleModel.endAt)) && DateTime.TryParse(Convert.ToString(idleModel.startAt), out startDate) && DateTime.TryParse(Convert.ToString(idleModel.endAt), out endDate))
                 {
                     ReqlFunction1 filterForStartDate = expr => expr["timestamp"].Ge(startDate);
                     string filterSerializedForStartDate = ReqlRaw.ToRawString(filterForStartDate);
@@ -471,7 +471,7 @@ namespace TrackService.RethinkDb_Changefeed.DataAccess.Repository
 
                     if (string.IsNullOrEmpty(vehicleId))
                     {
-                        if (string.IsNullOrEmpty(model.status))
+                        if (string.IsNullOrEmpty(idleModel.status))
                         {
                             vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterForStartDate).Filter(filterForEndDate).Skip((pageInfo.offset - 1) * pageInfo.limit).Limit(pageInfo.limit).Run(_rethinkDbConnection);
                             count = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterForStartDate).Filter(filterForEndDate).Count().Run(_rethinkDbConnection);
@@ -484,7 +484,7 @@ namespace TrackService.RethinkDb_Changefeed.DataAccess.Repository
                     }
                     else
                     {
-                        if (string.IsNullOrEmpty(model.status))
+                        if (string.IsNullOrEmpty(idleModel.status))
                         {
                             vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterForStartDate).Filter(filterForEndDate).Filter(filterForVehicleId).Skip((pageInfo.offset - 1) * pageInfo.limit).Limit(pageInfo.limit).Run(_rethinkDbConnection);
                             count = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterForStartDate).Filter(filterForEndDate).Filter(filterForVehicleId).Count().Run(_rethinkDbConnection);
@@ -500,7 +500,7 @@ namespace TrackService.RethinkDb_Changefeed.DataAccess.Repository
                 {
                     if (string.IsNullOrEmpty(vehicleId))
                     {
-                        if (string.IsNullOrEmpty(model.status))
+                        if (string.IsNullOrEmpty(idleModel.status))
                         {
                             vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Skip((pageInfo.offset - 1) * pageInfo.limit).Limit(pageInfo.limit).Run(_rethinkDbConnection);
                             count = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Count().Run(_rethinkDbConnection);
@@ -514,7 +514,7 @@ namespace TrackService.RethinkDb_Changefeed.DataAccess.Repository
                     }
                     else
                     {
-                        if (string.IsNullOrEmpty(model.status))
+                        if (string.IsNullOrEmpty(idleModel.status))
                         {
                             vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterForVehicleId).Skip((pageInfo.offset - 1) * pageInfo.limit).Limit(pageInfo.limit).Run(_rethinkDbConnection);
                             count = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterForVehicleId).Count().Run(_rethinkDbConnection);
@@ -529,7 +529,7 @@ namespace TrackService.RethinkDb_Changefeed.DataAccess.Repository
             }
             else
             {
-                ReqlFunction1 filterForinstitutionId = expr => expr["institutionId"].Eq(Convert.ToInt32(model.institutionId));
+                ReqlFunction1 filterForinstitutionId = expr => expr["institutionId"].Eq(Convert.ToInt32(idleModel.institutionId));
                 string filterSerializedForinstitutionId = ReqlRaw.ToRawString(filterForinstitutionId);
                 var filterExprForinstitutionId = ReqlRaw.FromRawString(filterSerializedForinstitutionId);
 
@@ -537,7 +537,7 @@ namespace TrackService.RethinkDb_Changefeed.DataAccess.Repository
                 if (InstitutionData.BufferedSize == 0)
                     Common.ThrowException("Institution does not exists in database.", StatusCodes.Status404NotFound);
 
-                if (!string.IsNullOrEmpty(Convert.ToString(model.startAt)) && !string.IsNullOrEmpty(Convert.ToString(model.endAt)) && DateTime.TryParse(Convert.ToString(model.startAt), out startDate) && DateTime.TryParse(Convert.ToString(model.endAt), out endDate))
+                if (!string.IsNullOrEmpty(Convert.ToString(idleModel.startAt)) && !string.IsNullOrEmpty(Convert.ToString(idleModel.endAt)) && DateTime.TryParse(Convert.ToString(idleModel.startAt), out startDate) && DateTime.TryParse(Convert.ToString(idleModel.endAt), out endDate))
                 {
                     ReqlFunction1 filterForStartDate = expr => expr["timestamp"].Ge(startDate);
                     string filterSerializedForStartDate = ReqlRaw.ToRawString(filterForStartDate);
@@ -549,7 +549,7 @@ namespace TrackService.RethinkDb_Changefeed.DataAccess.Repository
 
                     if (string.IsNullOrEmpty(vehicleId))
                     {
-                        if (string.IsNullOrEmpty(model.status))
+                        if (string.IsNullOrEmpty(idleModel.status))
                         {
                             vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterForStartDate).Filter(filterForEndDate).Skip((pageInfo.offset - 1) * pageInfo.limit).Limit(pageInfo.limit).Run(_rethinkDbConnection);
                             count = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterForStartDate).Filter(filterForEndDate).Count().Run(_rethinkDbConnection);
@@ -562,7 +562,7 @@ namespace TrackService.RethinkDb_Changefeed.DataAccess.Repository
                     }
                     else
                     {
-                        if (string.IsNullOrEmpty(model.status))
+                        if (string.IsNullOrEmpty(idleModel.status))
                         {
                             vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterForStartDate).Filter(filterForEndDate).Filter(filterForVehicleId).Skip((pageInfo.offset - 1) * pageInfo.limit).Limit(pageInfo.limit).Run(_rethinkDbConnection);
                             count = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterForStartDate).Filter(filterForEndDate).Filter(filterForVehicleId).Count().Run(_rethinkDbConnection);
@@ -578,7 +578,7 @@ namespace TrackService.RethinkDb_Changefeed.DataAccess.Repository
                 {
                     if (string.IsNullOrEmpty(vehicleId))
                     {
-                        if (string.IsNullOrEmpty(model.status))
+                        if (string.IsNullOrEmpty(idleModel.status))
                         {
                             vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Skip((pageInfo.offset - 1) * pageInfo.limit).Limit(pageInfo.limit).Run(_rethinkDbConnection);
                             count = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Count().Run(_rethinkDbConnection);
@@ -591,7 +591,7 @@ namespace TrackService.RethinkDb_Changefeed.DataAccess.Repository
                     }
                     else
                     {
-                        if (string.IsNullOrEmpty(model.status))
+                        if (string.IsNullOrEmpty(idleModel.status))
                         {
                             vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterForVehicleId).Skip((pageInfo.offset - 1) * pageInfo.limit).Limit(pageInfo.limit).Run(_rethinkDbConnection);
                             count = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExprForinstitutionId).Filter(filterForVehicleId).Count().Run(_rethinkDbConnection);
