@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace TrackService
 {
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [Authorize]
     public class TrackServiceHub : Hub
     {
         public readonly static ConnectionMapping<string> _connections = new ConnectionMapping<string>();
