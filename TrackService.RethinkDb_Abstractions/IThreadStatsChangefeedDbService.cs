@@ -14,7 +14,7 @@ namespace TrackService.RethinkDb_Abstractions
         bool CheckVehicleExists(string vehicleId);
         bool CheckInstitutionExists(string institutionId);
         Task<IChangefeed<Coordinates>> GetCoordinatesChangeFeedback(CancellationToken cancellationToken);
-        dynamic GetVehicles(string vehicleId, Pagination pageInfo, IdleModel idleModel);
+        (List<VehicleDetails>, int) GetVehicles(string vehicleId, Pagination pageInfo, IdleModel idleModel);
         void SyncCoordinatesToArchiveTable();   
         void SyncVehiclesToArchiveTable();
         Task InsertMobiles(MobilesModel trackingStats);
@@ -23,6 +23,6 @@ namespace TrackService.RethinkDb_Abstractions
         int IdDecryption(string id);
         string IdEncryption(int id);
         bool CheckVehicleByInstitutionExists(string vehicleId, string institutionId);
-        dynamic ClearLiveTrackingDatabase(string vehicleId);
+        void ClearLiveTrackingDatabase(string vehicleId);
     }
 }
