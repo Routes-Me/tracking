@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using TrackService.RethinkDb_Abstractions;
+using TrackService.RethinkDb_Changefeed.DataAccess.Repository;
 
 namespace TrackService.RethinkDb_Changefeed.DataAccess.Abstraction
 {
@@ -15,7 +16,7 @@ namespace TrackService.RethinkDb_Changefeed.DataAccess.Abstraction
         string GetInstitutionId(string mobileId);
         bool CheckVehicleExists(string vehicleId);
         bool CheckInstitutionExists(string institutionId);
-        List<string> UpdateVehicleStatus();
+        List<IdealVehicleResponse> UpdateVehicleStatus();
         void ChangeVehicleStatus(string vehicleId);
         void SyncCoordinatesToArchiveTable();
         void SyncVehiclesToArchiveTable();

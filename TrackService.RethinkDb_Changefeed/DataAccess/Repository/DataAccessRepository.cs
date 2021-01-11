@@ -344,14 +344,14 @@ namespace TrackService.RethinkDb_Changefeed.DataAccess.Repository
             _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExpr).Delete().Run(_rethinkDbConnection);
         }
 
-        public List<string> UpdateVehicleStatus()
+        public List<IdealVehicleResponse> UpdateVehicleStatus()
         {
             ReqlFunction1 filter = expr => expr["timestamp"].Le(DateTime.UtcNow.AddMinutes(-10));
 
             string filterSerialized = ReqlRaw.ToRawString(filter);
             var filterExpr = ReqlRaw.FromRawString(filterSerialized);
             Cursor<object> vehicles = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(filterExpr).Filter(new { isLive = true }).Run(_rethinkDbConnection);
-            List<string> idealVehicleList = new List<string>();
+            List<IdealVehicleResponse> idealVehicleList = new List<IdealVehicleResponse>();
 
             if (vehicles.BufferedSize > 0)
             {
@@ -362,7 +362,10 @@ namespace TrackService.RethinkDb_Changefeed.DataAccess.Repository
                             .Filter(new { id = response.id })
                             .Update(new { isLive = false }).Run(_rethinkDbConnection);
 
-                    idealVehicleList.Add(response.vehicleId.ToString());
+                    IdealVehicleResponse idealVehicleResponse = new IdealVehicleResponse();
+                    idealVehicleResponse.vehicleId = response.vehicleId.ToString();
+                    idealVehicleResponse.institutionId = response.institutionId.ToString();
+                    idealVehicleList.Add(idealVehicleResponse);
                 }
             }
             return idealVehicleList;

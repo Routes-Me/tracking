@@ -114,11 +114,6 @@ namespace TrackService
             }
         }
 
-        public async void NotifyIdealVehicleStatusToDashborad(IHubContext<TrackServiceHub> hubContext, string json)
-        {
-            await hubContext.Clients.All.SendAsync("FeedsReceiver", json);
-        }
-
         public void Unsubscribe()
         {
             _all.RemoveAll(Context.ConnectionId);
@@ -126,7 +121,7 @@ namespace TrackService
             _vehicles.RemoveAll(Context.ConnectionId);
         }
 
-        public async void SendDataToDashboard(IHubContext<TrackServiceHub> context, ICoordinateChangeFeedbackBackgroundService _coordinateChangeFeedbackBackgroundService, string institutionId, string vehicleId, string json)
+        public async void SendDataToDashboard(IHubContext<TrackServiceHub> context, string institutionId, string vehicleId, string json)
         {
             int institutionIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(institutionId);
             int vehicleIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(vehicleId);
