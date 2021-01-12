@@ -25,18 +25,50 @@ namespace TrackService.Controllers
         }
 
         [HttpGet]
-        [Route("vehicles")]
-        public async Task<IActionResult> VehicleStatus([FromQuery] Pagination pageInfo, [FromQuery] IdleModel IdleModel)
+        [Route("tracking/vehicles/{vehicleId?}")]
+        public IActionResult VehicleStatus(string vehicleId, [FromQuery] Pagination pageInfo, [FromQuery] IdleModel idleModel)
         {
-            if (string.IsNullOrEmpty(Convert.ToString(IdleModel.institutionId)))
+            try
             {
-                dynamic response = await _coordinateChangeFeedbackBackgroundService.GetAllVehicleDetail(pageInfo, IdleModel);
+                VehicleResponse response = new VehicleResponse();
+                var vehicles = _coordinateChangeFeedbackBackgroundService.GetVehicles(vehicleId, pageInfo, idleModel);
+                var page = new Pagination
+                {
+                    offset = pageInfo.offset,
+                    limit = pageInfo.limit,
+                    total = vehicles.Item2
+                };
+                response.status = true;
+                response.message = "Vehicle retrived successfully.";
+                response.statusCode = StatusCodes.Status200OK;
+                response.data = vehicles.Item1;
+                response.pagination = page;
                 return StatusCode((int)response.statusCode, response);
             }
-            else
+            catch (Exception ex)
             {
-                dynamic response = await _coordinateChangeFeedbackBackgroundService.GetAllVehicleByInstitutionId(IdleModel);
+                dynamic errorResponse = ReturnResponse.ExceptionResponse(ex);
+                return StatusCode((int)errorResponse.statusCode, errorResponse);
+            }
+        }
+        [HttpDelete]
+        [Route("tracking/vehicles/{vehicleId?}")]
+        public IActionResult ClearLiveDatabase(string vehicleId)
+        {
+            try
+            {
+                _coordinateChangeFeedbackBackgroundService.ClearLiveTrackingDatabase(vehicleId);
+                dynamic response = ReturnResponse.SuccessResponse("Records removed from live tracking service successfully.", false);
                 return StatusCode((int)response.statusCode, response);
+            }
+            catch (NullReferenceException ex)
+            {
+                return StatusCode(StatusCodes.Status404NotFound, ex.Message);
+            }
+            catch (Exception ex)
+            {
+                dynamic errorResponse = ReturnResponse.ExceptionResponse(ex);
+                return StatusCode((int)errorResponse.statusCode, errorResponse);
             }
         }
     }

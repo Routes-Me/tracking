@@ -7,19 +7,12 @@ using TrackService.RethinkDb_Abstractions;
 using TrackService.Helper.ConnectionMapping;
 using TrackService.Models;
 using Microsoft.AspNetCore.Authorization;
-using Obfuscation;
-using TrackService.RethinkDb_Changefeed.Model.Common;
-using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Newtonsoft.Json;
-using System.Security.Claims;
-using Newtonsoft.Json.Linq;
-using System.Collections.Generic;
 using Microsoft.AspNetCore.Http;
 
 namespace TrackService
 {
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [Authorize]
     public class TrackServiceHub : Hub
     {
         public readonly static ConnectionMapping<string> _connections = new ConnectionMapping<string>();
@@ -128,30 +121,27 @@ namespace TrackService
             _vehicles.RemoveAll(Context.ConnectionId);
         }
 
-        public async void SendDataToDashboard(IHubContext<TrackServiceHub> context, ICoordinateChangeFeedbackBackgroundService _coordinateChangeFeedbackBackgroundService, string institutionId, string vehicleId, string json)
+        public async void SendDataToDashboard(IHubContext<TrackServiceHub> context, string institutionId, string vehicleId, string json)
         {
             int institutionIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(institutionId);
             int vehicleIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(vehicleId);
 
-            // Send data to ReceiveAll screen
-            await context.Clients.All.SendAsync("ReceiveAllData", json);
-
-            // Send all vehicle data to Admin.
+            // Send data to admin screen
             foreach (var connectionid in _all.GetAll_ConnectionId("--all"))
             {
-                await context.Clients.Client(connectionid).SendAsync("ReceiveAllVehicleData", json);
+                await context.Clients.Client(connectionid).SendAsync("FeedsReceiver", json);
             }
 
-            // Send all vehicle for institution.
+            // Send data to institutions screen
             foreach (var connectionid in _institutions.GetInstitution_ConnectionId(institutionIdDecrypted.ToString()))
             {
-                await context.Clients.Client(connectionid).SendAsync("ReceiveInstitutionData", json);
+                await context.Clients.Client(connectionid).SendAsync("FeedsReceiver", json);
             }
 
-            // Send vehicle data for vehicle.
+            // Send data to vehicles screen
             foreach (var connectionid in _vehicles.GetVehicle_ConnectionId(vehicleIdDecrypted.ToString()))
             {
-                await context.Clients.Client(connectionid).SendAsync("ReceiveVehicleData", json);
+                await context.Clients.Client(connectionid).SendAsync("FeedsReceiver", json);
             }
         }
 

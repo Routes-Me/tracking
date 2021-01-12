@@ -8,16 +8,12 @@ namespace TrackService.Controllers
     [Route("[controller]")]
     public class HomeController : ControllerBase
     {
-        [Obsolete]
-        public readonly IHostingEnvironment _hostingEnv;
-
-        [Obsolete]
-        public HomeController(IHostingEnvironment hostingEnv)
+        private readonly IWebHostEnvironment _hostingEnv;
+        public HomeController(IWebHostEnvironment hostingEnv)
         {
             _hostingEnv = hostingEnv;
         }
         [HttpGet]
-        [Obsolete]
         public string Get()
         {
             return "Tracking service started successfully. Environment - " + _hostingEnv.EnvironmentName + "";

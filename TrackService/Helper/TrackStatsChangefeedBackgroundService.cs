@@ -22,12 +22,12 @@ namespace TrackService.Helper
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            await _coordinateChangeFeedbackBackgroundService.EnsureDatabaseCreated();
-
-            IChangefeed<Coordinates> coordinateChangeFeedback = await _coordinateChangeFeedbackBackgroundService.GetCoordinatesChangeFeedback(stoppingToken);
-
             try
             {
+                await _coordinateChangeFeedbackBackgroundService.EnsureDatabaseCreated();
+
+                IChangefeed<Coordinates> coordinateChangeFeedback = await _coordinateChangeFeedbackBackgroundService.GetCoordinatesChangeFeedback(stoppingToken);
+
                 await foreach (Coordinates coordinateChange in coordinateChangeFeedback.FetchFeed(stoppingToken))
                 {
                     if (coordinateChange != null)
@@ -41,18 +41,16 @@ namespace TrackService.Helper
                         var Latitude = newThreadStats.Split(",")[1].Replace("latitude:", "").Trim();
                         var Longitude = newThreadStats.Split(",")[2].Replace("longitude:", "").Trim();
                         var timestamp = newThreadStats.Split(",")[3].Replace("timestamp:", "").Trim();
-
-                        var institutionIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdEncryption(Convert.ToInt32(InstitutionId));
-                        var vehicleIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdEncryption(Convert.ToInt32(VehicleId));
-                        var deviceIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdEncryption(Convert.ToInt32(DeviceId));
-                        var json = "{\"vehicleId\": \"" + vehicleIdDecrypted + "\",\"institutionId\": \"" + institutionIdDecrypted + "\",\"deviceId\": \"" + deviceIdDecrypted + "\",\"coordinates\": {\"latitude\": \"" + Latitude + "\", \"longitude\": \"" + Longitude + "\",\"timestamp\": \"" + timestamp + "\"}}";
+                        var institutionIdEncrypted = _coordinateChangeFeedbackBackgroundService.IdEncryption(Convert.ToInt32(InstitutionId));
+                        var vehicleIdEncrypted = _coordinateChangeFeedbackBackgroundService.IdEncryption(Convert.ToInt32(VehicleId));
+                        var deviceIdEncrypted = _coordinateChangeFeedbackBackgroundService.IdEncryption(Convert.ToInt32(DeviceId));
+                        var json = "{\"vehicleId\": \"" + vehicleIdEncrypted + "\",\"institutionId\": \"" + institutionIdEncrypted + "\",\"deviceId\": \"" + deviceIdEncrypted + "\",\"coordinates\": {\"latitude\": \"" + Latitude + "\", \"longitude\": \"" + Longitude + "\",\"timestamp\": \"" + timestamp + "\"}}";
                         trackServiceHub = new TrackServiceHub();
-                        await Task.Run(() => { trackServiceHub.SendDataToDashboard(_hubContext, _coordinateChangeFeedbackBackgroundService, institutionIdDecrypted, vehicleIdDecrypted, json); }).ConfigureAwait(true); // To send data to all subscribe vehicled for admin
+                        await Task.Run(() => { trackServiceHub.SendDataToDashboard(_hubContext, institutionIdEncrypted, vehicleIdEncrypted, json); }).ConfigureAwait(true); // To send data to all subscribe vehicled for admin
                     }
                 }
             }
-            catch (OperationCanceledException)
-            { }
+            catch (OperationCanceledException) { }
         }
     }
 }
