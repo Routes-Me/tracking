@@ -2,15 +2,15 @@
 
 namespace TrackService.Models
 {
-    public class LocationFeed
-    { 
-        public List<SendLocation> SendLocation { get; set; }
-    }
-    public class SendLocation
+    public class Feeds
     {
-        public decimal latitude { get; set; }
-        public decimal longitude { get; set; }
-        public string timestamp { get; set; }
-        public int deviceId { get; set; }
+        public List<Location> SendLocation { get; set; }
+    }
+    public class Location
+    {
+        public decimal Latitude { get; set; }
+        public decimal Longitude { get; set; }
+        public string Timestamp { get; set; }
+        public int DeviceId { get; set; }
     }
 }

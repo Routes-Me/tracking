@@ -9,6 +9,7 @@ using TrackService.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http;
+using System.Collections.Generic;
 
 namespace TrackService
 {
@@ -39,15 +40,15 @@ namespace TrackService
         {
             try
             {
-                LocationFeed feeds = Newtonsoft.Json.JsonConvert.DeserializeObject<LocationFeed>(locations);
-                foreach (var location in feeds.SendLocation)
+                List<Location> feeds = Newtonsoft.Json.JsonConvert.DeserializeObject<List<Location>>(locations);
+                foreach (var location in feeds)
                 {
                     await _coordinateChangeFeedbackBackgroundService.InsertCordinates(new CordinatesModel
                     {
                         mobileId = _vehiclesId.GetVehicleId(Context.ConnectionId).ToString(),
-                        longitude = location.longitude,
-                        latitude = location.latitude,
-                        timestamp = location.timestamp.ToString(),
+                        longitude = location.Longitude,
+                        latitude = location.Latitude,
+                        timestamp = location.Timestamp.ToString(),
                         deviceId = Convert.ToInt32(_deviceId.GetDeviceId(Context.ConnectionId))
                     });
                 }

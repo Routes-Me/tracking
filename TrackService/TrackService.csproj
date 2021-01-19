@@ -36,6 +36,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="..\.editorconfig" Link=".editorconfig" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Reference Include="Obfuscation">
       <HintPath>SharedBin\Obfuscation.dll</HintPath>
     </Reference>
