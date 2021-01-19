@@ -79,7 +79,8 @@ namespace TrackService
             //await PublishFeeds(feeds.SendLocation, Context);
 
             await Clients.Client(Context.ConnectionId).SendAsync("CommonMessage", "{ \"code\":\"200\", \"message\": Coordinates inserted */successfully\"\" }");
-            await Clients.Groups(instituitonId,"super").SendAsync("FeedsReceiver", updates);
+            //await Clients.Groups(instituitonId,"super").SendAsync("FeedsReceiver", updates);
+            await Clients.All.SendAsync("FeedsReceiver", updates);
         }
 
         //Receiver Subscribe
@@ -88,15 +89,15 @@ namespace TrackService
             
             try
             {
-                var claimData = GetUserClaimsData();
-                if (claimData.Privilege.Equals("super"))
-                {
-                    await Groups.AddToGroupAsync(Context.ConnectionId, "super");
-                }
-                else
-                {
-                    await Groups.AddToGroupAsync(Context.ConnectionId, institutionId);
-                }
+                //var claimData = GetUserClaimsData();
+                //if (claimData.Privilege.Equals("super"))
+                //{
+                //    await Groups.AddToGroupAsync(Context.ConnectionId, "super");
+                //}
+                //else
+                //{
+                //    await Groups.AddToGroupAsync(Context.ConnectionId, institutionId);
+                //}
             }
             catch(Exception ex)
             {
