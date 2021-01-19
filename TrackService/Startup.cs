@@ -178,7 +178,7 @@ namespace TrackService
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
-                endpoints.MapHub<TrackServiceHub>("/trackServiceHub");
+                endpoints.MapHub<TrackServiceHubNew>("/trackServiceHub");
             });
         }
     }
