@@ -1,19 +1,15 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using System;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.SignalR.Client;
 using TrackService.Helper;
 using TrackService.RethinkDb_Abstractions;
 using TrackService.Helper.ConnectionMapping;
 using TrackService.Models;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http;
 using System.Collections.Generic;
 
 namespace TrackService
 {
-    [Authorize]
     public class TrackServiceHub : Hub
     {
         public readonly static ConnectionMapping<string> _connections = new ConnectionMapping<string>();
@@ -115,11 +111,6 @@ namespace TrackService
             }
         }
 
-        public async void NotifyIdealVehicleStatusToDashborad(IHubContext<TrackServiceHub> hubContext, string json)
-        {
-            await hubContext.Clients.All.SendAsync("FeedsReceiver", json);
-        }
-
         public void Unsubscribe()
         {
             _all.RemoveAll(Context.ConnectionId);
@@ -127,7 +118,7 @@ namespace TrackService
             _vehicles.RemoveAll(Context.ConnectionId);
         }
 
-        public async void SendDataToDashboard(IHubContext<TrackServiceHub> context, ICoordinateChangeFeedbackBackgroundService _coordinateChangeFeedbackBackgroundService, string institutionId, string vehicleId, string json)
+        public async void SendDataToDashboard(IHubContext<TrackServiceHub> context, string institutionId, string vehicleId, string json)
         {
             int institutionIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(institutionId);
             int vehicleIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(vehicleId);

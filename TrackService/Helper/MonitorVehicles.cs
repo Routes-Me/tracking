@@ -30,10 +30,11 @@ namespace TrackService.Helper
             var idealVehicles = _coordinateChangeFeedbackBackgroundService.UpdateVehicleStatus();
             foreach (var item in idealVehicles)
             {
-                string vehicleId = _coordinateChangeFeedbackBackgroundService.IdEncryption(Convert.ToInt32(item));
-                var json = "The vehicleId " + vehicleId + " has gone into the offline state.";
+                string vehicleIdEncrypted = _coordinateChangeFeedbackBackgroundService.IdEncryption(Convert.ToInt32(item.vehicleId));
+                string institutionIdEncrypted = _coordinateChangeFeedbackBackgroundService.IdEncryption(Convert.ToInt32(item.institutionId));
+                var json = "The vehicle " + vehicleIdEncrypted + " has gone into the offline state.";
                 trackServiceHub = new TrackServiceHub();
-                await Task.Run(() => { trackServiceHub.NotifyIdealVehicleStatusToDashborad(_hubContext, json); }).ConfigureAwait(true); // Send notification to dashboard when any vehicle goes into offline state.
+                await Task.Run(() => { trackServiceHub.SendDataToDashboard(_hubContext, institutionIdEncrypted, vehicleIdEncrypted, json); }).ConfigureAwait(true); // Send notification to dashboard when any vehicle goes into offline state.
             }
         }
     }

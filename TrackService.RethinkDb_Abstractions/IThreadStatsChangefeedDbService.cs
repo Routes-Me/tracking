@@ -8,7 +8,7 @@ namespace TrackService.RethinkDb_Abstractions
     {
         Task EnsureDatabaseCreated();
         Task InsertCordinates(CordinatesModel trackingStats);
-        List<string> UpdateVehicleStatus();
+        List<IdealVehicleResponse> UpdateVehicleStatus();
         void ChangeVehicleStatus(string vehicleId);
         string GetInstitutionId(string mobileId);
         bool CheckVehicleExists(string vehicleId);
