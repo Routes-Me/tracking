@@ -78,7 +78,7 @@ namespace TrackService
 
             //await PublishFeeds(feeds.SendLocation, Context);
 
-          ///*  await Clients.Client(Context.ConnectionId).SendAsync("CommonMessage", "{ \"code\":\"200\", \"message\": Coordinates inserted */successfully\"\" }");
+            await Clients.Client(Context.ConnectionId).SendAsync("CommonMessage", "{ \"code\":\"200\", \"message\": Coordinates inserted */successfully\"\" }");
             await Clients.Groups(instituitonId,"super").SendAsync("FeedsReceiver", updates);
         }
 
