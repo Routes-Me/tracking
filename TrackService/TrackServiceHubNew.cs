@@ -65,7 +65,7 @@ namespace TrackService
 
             string instituitonId = Context.Items["InstitutionId"].ToString();
             string vehicleId = Context.Items["VehicleId"].ToString();
-
+            Console.WriteLine("Hub Log Started:  ===> vehicle ID" + vehicleId);
 
             string DeviceId = "test";
             var updates = "{\"vehicleId\": \"" + vehicleId + "\",\"institutionId\": \"" + instituitonId + "\",\"deviceId\": \"" + DeviceId;
@@ -73,14 +73,16 @@ namespace TrackService
             foreach (Location location in feeds.SendLocation)
             {
                 updates = updates + "\",\"coordinates\": {\"latitude\": \"" + location.Latitude + "\", \"longitude\": \"" + location.Longitude + "\",\"timestamp\": \"" + location.Timestamp + "\"}}";
+                
 
             }
 
             //await PublishFeeds(feeds.SendLocation, Context);
-
+            Console.WriteLine("Hub Log Finished:  ===> vehicle ID" + vehicleId + "Last Updates"+  updates);
             await Clients.Client(Context.ConnectionId).SendAsync("CommonMessage", "{ \"code\":\"200\", \"message\": Coordinates inserted */successfully\"\" }");
             //await Clients.Groups(instituitonId,"super").SendAsync("FeedsReceiver", updates);
             await Clients.All.SendAsync("FeedsReceiver", updates);
+            
         }
 
         //Receiver Subscribe
