@@ -9,7 +9,7 @@ using TrackService.Models;
 
 namespace TrackService
 {
-    [Authorize]
+    
     public class TrackServiceHubNew : Hub
     {
 
