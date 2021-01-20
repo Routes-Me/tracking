@@ -61,27 +61,29 @@ namespace TrackService
         //Receive feeds
         public async void SendLocation(string locations)
         {
+
             Feeds feeds = Newtonsoft.Json.JsonConvert.DeserializeObject<Feeds>(locations);
 
             string instituitonId = Context.Items["InstitutionId"].ToString();
             string vehicleId = Context.Items["VehicleId"].ToString();
-            Console.WriteLine("Hub Log Started:  ===> vehicle ID" + vehicleId);
+            Console.WriteLine("Hub Log : START : vehicle ID : " + vehicleId);
 
-            string DeviceId = "test";
-            var updates = "{\"vehicleId\": \"" + vehicleId + "\",\"institutionId\": \"" + instituitonId + "\",\"deviceId\": \"" + DeviceId;
+            string deviceId = "---";
 
+            var lastUpdate = " !!!Empty location feeds!!!";
             foreach (Location location in feeds.SendLocation)
             {
-                updates = updates + "\",\"coordinates\": {\"latitude\": \"" + location.Latitude + "\", \"longitude\": \"" + location.Longitude + "\",\"timestamp\": \"" + location.Timestamp + "\"}}";
-                
+                lastUpdate = "Last location feed ::  Time -- " + location.Timestamp+" -- Location : Lat " + location.Latitude + " || " + "Long " + location.Longitude;
+                var feed = "{\"vehicleId\": \"" + vehicleId + "\",\"institutionId\": \"" + instituitonId + "\",\"deviceId\": \"" + deviceId + "\",\"coordinates\": {\"latitude\": \"" + location.Latitude + "\", \"longitude\": \"" + location.Longitude + "\",\"timestamp\": \"" + location.Timestamp + "\"}}";
+                await Clients.All.SendAsync("FeedsReceiver", feed);
 
             }
 
             //await PublishFeeds(feeds.SendLocation, Context);
-            Console.WriteLine("Hub Log Finished:  ===> vehicle ID" + vehicleId + "Last Updates"+  updates);
+            Console.WriteLine("Hub Log : END   : vehicle ID : " + vehicleId + " :: " + lastUpdate);
             await Clients.Client(Context.ConnectionId).SendAsync("CommonMessage", "{ \"code\":\"200\", \"message\": Coordinates inserted */successfully\"\" }");
             //await Clients.Groups(instituitonId,"super").SendAsync("FeedsReceiver", updates);
-            await Clients.All.SendAsync("FeedsReceiver", updates);
+            
             
         }
 
