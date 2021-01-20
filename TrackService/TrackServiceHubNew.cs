@@ -24,7 +24,7 @@ namespace TrackService
 
                 Context.Items.Add("InstitutionId", institutionId);
                 Context.Items.Add("VehicleId", vehicleId);
-                Context.Items.Add("DeviceId", vehicleId);
+                Context.Items.Add("DeviceId", deviceId);
 
             }
 
