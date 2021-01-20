@@ -83,7 +83,7 @@ namespace TrackService
             }
 
             //await PublishFeeds(feeds.SendLocation, Context);
-            Console.WriteLine("Hub Log : vehicle ID  - " + vehicleId + " - : LAST FEED   : " + lastUpdate);
+            Console.WriteLine("Hub Log : vehicle ID  - " + vehicleId + " - : LAST FEED : " + lastUpdate);
             await Clients.Client(Context.ConnectionId).SendAsync("CommonMessage", "{ \"code\":\"200\", \"message\": Coordinates inserted */successfully\"\" }");
             //await Clients.Groups(instituitonId,"super").SendAsync("FeedsReceiver", updates);
             
