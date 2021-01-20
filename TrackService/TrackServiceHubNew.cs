@@ -78,7 +78,7 @@ namespace TrackService
             {
                 lastUpdate = feeds.SendLocation.Count()+" > location feed ::  Time -> " + location.Timestamp+" <- Location : Lat " + location.Latitude + " || " + "Long " + location.Longitude;
                 var feed = "{\"vehicleId\": \"" + vehicleId + "\",\"institutionId\": \"" + instituitonId + "\",\"deviceId\": \"" + deviceId + "\",\"coordinates\": {\"latitude\": \"" + location.Latitude + "\", \"longitude\": \"" + location.Longitude + "\",\"timestamp\": \"" + location.Timestamp + "\"}}";
-                await Clients.All.SendAsync("FeedsReceiver", feed);
+                await Clients.Caller.SendAsync("FeedsReceiver", feed);
 
             }
 
