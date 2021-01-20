@@ -20,10 +20,11 @@ namespace TrackService
             {
                 string institutionId = Context.GetHttpContext().Request.Query["institutionId"].ToString();
                 string vehicleId = Context.GetHttpContext().Request.Query["vehicleId"].ToString();
-                //string deviceId = Context.GetHttpContext().Request.Query["deviceId"].ToString();
+                string deviceId = Context.GetHttpContext().Request.Query["deviceId"].ToString();
 
                 Context.Items.Add("InstitutionId", institutionId);
                 Context.Items.Add("VehicleId", vehicleId);
+                Context.Items.Add("DeviceId", vehicleId);
 
             }
 
@@ -39,8 +40,7 @@ namespace TrackService
         private async Task PublishFeeds(IEnumerable<Location> locations)
         {
             string instituitonId = Context.Items["InstitutionId"].ToString();
-            var vehicleId = Context.Items["VehicleId"].ToString();
-
+            string vehicleId = Context.Items["VehicleId"].ToString();
 
             string DeviceId = "test";
             var updates = "{\"vehicleId\": \"" + vehicleId + "\",\"institutionId\": \"" + instituitonId + "\",\"deviceId\": \"" + DeviceId;
@@ -66,9 +66,12 @@ namespace TrackService
 
             string instituitonId = Context.Items["InstitutionId"].ToString();
             string vehicleId = Context.Items["VehicleId"].ToString();
-            Console.WriteLine("Hub Log : vehicle ID  - " + vehicleId+ " - : START : ");
+            string deviceId = Context.Items["DeviceId"].ToString();
 
-            string deviceId = "---";
+            //Console.WriteLine("Hub Log : vehicle ID  - " + vehicleId+ " - : START : ");
+
+            Console.WriteLine("Hub Log : "+"vehicle ID  - " + vehicleId + " - Institution ID  - " + instituitonId + " - Device ID  - " + deviceId + " -");
+
 
             var lastUpdate = " !!!Empty location feeds!!!";
             foreach (Location location in feeds.SendLocation)
@@ -80,7 +83,7 @@ namespace TrackService
             }
 
             //await PublishFeeds(feeds.SendLocation, Context);
-            Console.WriteLine("Hub Log : vehicle ID  - " + vehicleId + " - : END   : " + lastUpdate);
+            Console.WriteLine("Hub Log : vehicle ID  - " + vehicleId + " - : LAST FEED   : " + lastUpdate);
             await Clients.Client(Context.ConnectionId).SendAsync("CommonMessage", "{ \"code\":\"200\", \"message\": Coordinates inserted */successfully\"\" }");
             //await Clients.Groups(instituitonId,"super").SendAsync("FeedsReceiver", updates);
             
