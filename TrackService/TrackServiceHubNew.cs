@@ -74,13 +74,16 @@ namespace TrackService
 
 
             var lastUpdate = " !!!Empty location feeds!!!";
-            foreach (Location location in feeds.SendLocation)
-            {
-                lastUpdate = feeds.SendLocation.Count()+" > location feed ::  Time -> " + location.Timestamp+" <- Location : Lat " + location.Latitude + " || " + "Long " + location.Longitude;
-                var feed = "{\"vehicleId\": \"" + vehicleId + "\",\"institutionId\": \"" + instituitonId + "\",\"deviceId\": \"" + deviceId + "\",\"coordinates\": {\"latitude\": \"" + location.Latitude + "\", \"longitude\": \"" + location.Longitude + "\",\"timestamp\": \"" + location.Timestamp + "\"}}";
-                await Clients.All.SendAsync("FeedsReceiver", feed);
 
+            if(feeds.SendLocation.Count()>0)
+            {
+                Location location = feeds.SendLocation.Last();
+                lastUpdate = feeds.SendLocation.Count() + " > location feed ::  Time -> " + location.Timestamp + " <- Location : Lat " + location.Latitude + " || " + "Long " + location.Longitude;
+                var feed = "{\"vehicleId\": \"" + vehicleId + "\",\"institutionId\": \"" + instituitonId + "\",\"deviceId\": \"" + deviceId + "\",\"coordinates\": {\"latitude\": \"" + location.Latitude + "\", \"longitude\": \"" + location.Longitude + "\",\"timestamp\": \"" + location.Timestamp + "\"}}";
+
+                await Clients.Others.SendAsync("FeedsReceiver", feed);
             }
+            
 
             //await PublishFeeds(feeds.SendLocation, Context);
             Console.WriteLine("Hub Log : vehicle ID  - " + vehicleId + " - : LAST FEED : " + lastUpdate);
