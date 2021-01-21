@@ -20,10 +20,11 @@ namespace TrackService
             {
                 string institutionId = Context.GetHttpContext().Request.Query["institutionId"].ToString();
                 string vehicleId = Context.GetHttpContext().Request.Query["vehicleId"].ToString();
-                //string deviceId = Context.GetHttpContext().Request.Query["deviceId"].ToString();
+                string deviceId = Context.GetHttpContext().Request.Query["deviceId"].ToString();
 
                 Context.Items.Add("InstitutionId", institutionId);
                 Context.Items.Add("VehicleId", vehicleId);
+                Context.Items.Add("DeviceId", deviceId);
 
             }
 
@@ -39,8 +40,7 @@ namespace TrackService
         private async Task PublishFeeds(IEnumerable<Location> locations)
         {
             string instituitonId = Context.Items["InstitutionId"].ToString();
-            var vehicleId = Context.Items["VehicleId"].ToString();
-
+            string vehicleId = Context.Items["VehicleId"].ToString();
 
             string DeviceId = "test";
             var updates = "{\"vehicleId\": \"" + vehicleId + "\",\"institutionId\": \"" + instituitonId + "\",\"deviceId\": \"" + DeviceId;
@@ -61,25 +61,36 @@ namespace TrackService
         //Receive feeds
         public async void SendLocation(string locations)
         {
+
             Feeds feeds = Newtonsoft.Json.JsonConvert.DeserializeObject<Feeds>(locations);
 
             string instituitonId = Context.Items["InstitutionId"].ToString();
             string vehicleId = Context.Items["VehicleId"].ToString();
+            string deviceId = Context.Items["DeviceId"].ToString();
+
+            //Console.WriteLine("Hub Log : vehicle ID  - " + vehicleId+ " - : START : ");
+
+            Console.WriteLine("Hub Log : "+"vehicle ID  - " + vehicleId + " - Institution ID  - " + instituitonId + " - Device ID  - " + deviceId + " -");
 
 
-            string DeviceId = "test";
-            var updates = "{\"vehicleId\": \"" + vehicleId + "\",\"institutionId\": \"" + instituitonId + "\",\"deviceId\": \"" + DeviceId;
+            var lastUpdate = " !!!Empty location feeds!!!";
 
-            foreach (Location location in feeds.SendLocation)
+            if(feeds.SendLocation.Count()>0)
             {
-                updates = updates + "\",\"coordinates\": {\"latitude\": \"" + location.Latitude + "\", \"longitude\": \"" + location.Longitude + "\",\"timestamp\": \"" + location.Timestamp + "\"}}";
+                Location location = feeds.SendLocation.Last();
+                lastUpdate = feeds.SendLocation.Count() + " > location feed ::  Time -> " + location.Timestamp + " <- Location : Lat " + location.Latitude + " || " + "Long " + location.Longitude;
+                var feed = "{\"vehicleId\": \"" + vehicleId + "\",\"institutionId\": \"" + instituitonId + "\",\"deviceId\": \"" + deviceId + "\",\"coordinates\": {\"latitude\": \"" + location.Latitude + "\", \"longitude\": \"" + location.Longitude + "\",\"timestamp\": \"" + location.Timestamp + "\"}}";
 
+                await Clients.Others.SendAsync("FeedsReceiver", feed);
             }
+            
 
             //await PublishFeeds(feeds.SendLocation, Context);
-
+            Console.WriteLine("Hub Log : vehicle ID  - " + vehicleId + " - : LAST FEED : " + lastUpdate);
             await Clients.Client(Context.ConnectionId).SendAsync("CommonMessage", "{ \"code\":\"200\", \"message\": Coordinates inserted */successfully\"\" }");
-            await Clients.Groups(instituitonId,"super").SendAsync("FeedsReceiver", updates);
+            //await Clients.Groups(instituitonId,"super").SendAsync("FeedsReceiver", updates);
+            
+            
         }
 
         //Receiver Subscribe
@@ -88,15 +99,15 @@ namespace TrackService
             
             try
             {
-                var claimData = GetUserClaimsData();
-                if (claimData.Privilege.Equals("super"))
-                {
-                    await Groups.AddToGroupAsync(Context.ConnectionId, "super");
-                }
-                else
-                {
-                    await Groups.AddToGroupAsync(Context.ConnectionId, institutionId);
-                }
+                //var claimData = GetUserClaimsData();
+                //if (claimData.Privilege.Equals("super"))
+                //{
+                //    await Groups.AddToGroupAsync(Context.ConnectionId, "super");
+                //}
+                //else
+                //{
+                //    await Groups.AddToGroupAsync(Context.ConnectionId, institutionId);
+                //}
             }
             catch(Exception ex)
             {

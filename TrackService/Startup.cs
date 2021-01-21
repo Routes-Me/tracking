@@ -61,25 +61,25 @@ namespace TrackService
             services.AddSignalR();
             services.AddSignalR(hubOptions =>
             {
-                hubOptions.MaximumReceiveMessageSize = 10240;  // bytes
+                hubOptions.MaximumReceiveMessageSize = 10240*3;  // bytes
                 hubOptions.KeepAliveInterval = TimeSpan.FromMinutes(3);
                 hubOptions.ClientTimeoutInterval = TimeSpan.FromMinutes(6);
                 hubOptions.EnableDetailedErrors = true;
             });
 
-            services.AddCronJob<SyncCoordinates>(c =>
-            {
-                c.TimeZoneInfo = TimeZoneInfo.Utc;
-               // c.CronExpression = @"0 1 */1 * * "; // Run every day at 1 AM
-                c.CronExpression = @"*/4 * * * *"; // Run every 4 minutes
-            });
+            //services.AddCronJob<SyncCoordinates>(c =>
+            //{
+            //    c.TimeZoneInfo = TimeZoneInfo.Utc;
+            //   // c.CronExpression = @"0 1 */1 * * "; // Run every day at 1 AM
+            //    c.CronExpression = @"*/4 * * * *"; // Run every 4 minutes
+            //});
 
-            services.AddCronJob<SyncVehicles>(c =>
-            {
-                c.TimeZoneInfo = TimeZoneInfo.Utc;
-                 //c.CronExpression = @"0 3 */7 * * "; // Run every 7 day at 3 AM
-                c.CronExpression = @"*/8 * * * *"; // Run every 8 minutes
-            });
+            //services.AddCronJob<SyncVehicles>(c =>
+            //{
+            //    c.TimeZoneInfo = TimeZoneInfo.Utc;
+            //     //c.CronExpression = @"0 3 */7 * * "; // Run every 7 day at 3 AM
+            //    c.CronExpression = @"*/8 * * * *"; // Run every 8 minutes
+            //});
 
             var appSettingsSection = Configuration.GetSection("AppSettings");
             services.Configure<AppSettings>(appSettingsSection);
