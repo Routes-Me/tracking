@@ -37,84 +37,69 @@ namespace TrackService
             await base.OnDisconnectedAsync(ex);
         }
 
+
         private async Task PublishFeeds(IEnumerable<Location> locations)
         {
             string instituitonId = Context.Items["InstitutionId"].ToString();
             string vehicleId = Context.Items["VehicleId"].ToString();
-
-            string DeviceId = "test";
-            var updates = "{\"vehicleId\": \"" + vehicleId + "\",\"institutionId\": \"" + instituitonId + "\",\"deviceId\": \"" + DeviceId;
-
-            foreach (Location location in locations)
-            {
-                updates = updates + "\",\"coordinates\": {\"latitude\": \"" + location.Latitude + "\", \"longitude\": \"" + location.Longitude + "\",\"timestamp\": \"" + location.Timestamp + "\"}}";
-
-            }
-
-        }
-
-        public async void SendLocationFeeds(List<Location> locations)
-        {
-            //await PublishFeeds(locations, Context);
-        }
-
-        //Receive feeds
-        public async void SendLocation(string locations)
-        {
-
-            Feeds feeds = Newtonsoft.Json.JsonConvert.DeserializeObject<Feeds>(locations);
-
-            string instituitonId = Context.Items["InstitutionId"].ToString();
-            string vehicleId = Context.Items["VehicleId"].ToString();
             string deviceId = Context.Items["DeviceId"].ToString();
 
-            //Console.WriteLine("Hub Log : vehicle ID  - " + vehicleId+ " - : START : ");
+            Location lastLocationFeed = locations.Last();
 
-            Console.WriteLine("Hub Log : "+"vehicle ID  - " + vehicleId + " - Institution ID  - " + instituitonId + " - Device ID  - " + deviceId + " -");
-
-
-            var lastUpdate = " !!!Empty location feeds!!!";
-
-            if(feeds.SendLocation.Count()>0)
-            {
-                Location location = feeds.SendLocation.Last();
-                lastUpdate = feeds.SendLocation.Count() + " > location feed ::  Time -> " + location.Timestamp + " <- Location : Lat " + location.Latitude + " || " + "Long " + location.Longitude;
-                var feed = "{\"vehicleId\": \"" + vehicleId + "\",\"institutionId\": \"" + instituitonId + "\",\"deviceId\": \"" + deviceId + "\",\"coordinates\": {\"latitude\": \"" + location.Latitude + "\", \"longitude\": \"" + location.Longitude + "\",\"timestamp\": \"" + location.Timestamp + "\"}}";
-
-                await Clients.Others.SendAsync("FeedsReceiver", feed);
-            }
+            Console.WriteLine("Hub Log : " + "vehicle ID  - " + vehicleId + " - Institution ID  - " + instituitonId + " - Device ID  - " + deviceId + " -");
+            Console.WriteLine(locations.Count() + " > location feed ::  Time -> " + lastLocationFeed.Timestamp + " <- Location : Lat " + lastLocationFeed.Latitude + " || " + "Long " + lastLocationFeed.Longitude);
+            var feed = FeedFormat(locations.Last(), vehicleId: vehicleId, instituitonId: instituitonId, deviceId: deviceId);
             
-
-            //await PublishFeeds(feeds.SendLocation, Context);
-            Console.WriteLine("Hub Log : vehicle ID  - " + vehicleId + " - : LAST FEED : " + lastUpdate);
+            
+            await Clients.Groups(instituitonId, "super").SendAsync("FeedsReceiver", feed); // locations.Last()
             await Clients.Client(Context.ConnectionId).SendAsync("CommonMessage", "{ \"code\":\"200\", \"message\": Coordinates inserted */successfully\"\" }");
-            //await Clients.Groups(instituitonId,"super").SendAsync("FeedsReceiver", updates);
-            
-            
+        }
+
+        private string FeedFormat(Location location, string vehicleId, string instituitonId, string deviceId)
+        {
+            return  "{\"vehicleId\": \"" + vehicleId + "\",\"institutionId\": \"" + instituitonId + "\",\"deviceId\": \"" + deviceId + "\",\"coordinates\": {\"latitude\": \"" + location.Latitude + "\", \"longitude\": \"" + location.Longitude + "\",\"timestamp\": \"" + location.Timestamp + "\"}}";
+        }
+
+        public async void SendLocations(List<Location> locations)
+        {
+            await PublishFeeds(locations);
+        }
+
+        public async void SendLocation(string locations)
+        {
+            Feeds feeds = Newtonsoft.Json.JsonConvert.DeserializeObject<Feeds>(locations);
+
+            await PublishFeeds(feeds.SendLocation);
         }
 
         //Receiver Subscribe
         public async void Subscribe(string institutionId, string vehicleId, string deviceId)
         {
-            
             try
             {
-                //var claimData = GetUserClaimsData();
-                //if (claimData.Privilege.Equals("super"))
-                //{
-                //    await Groups.AddToGroupAsync(Context.ConnectionId, "super");
-                //}
-                //else
-                //{
-                //    await Groups.AddToGroupAsync(Context.ConnectionId, institutionId);
-                //}
-            }
-            catch(Exception ex)
+                SubscribeFeeds(institutionId: institutionId);
+            }catch(Exception ex)
             {
                 await Clients.Client(Context.ConnectionId).SendAsync("CommonMessage", ex.Message);
-                return;
+
             }
-            
+        }
+
+        private async void SubscribeFeeds(string institutionId)
+        {
+            var claimData = GetUserClaimsData();
+            if (claimData.Privilege.Equals("super"))
+            {
+                await Groups.AddToGroupAsync(Context.ConnectionId, "super");
+            }
+            else
+            {
+                if (string.IsNullOrEmpty(institutionId))
+                {
+                    throw new ArgumentNullException();
+                }
+                await Groups.AddToGroupAsync(Context.ConnectionId, institutionId);
+            }
         }
 
         //Receiver Unsubscribe
