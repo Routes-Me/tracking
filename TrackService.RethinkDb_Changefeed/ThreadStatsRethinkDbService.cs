@@ -80,8 +80,6 @@ namespace TrackService.RethinkDb_Changefeed
 
         public (List<VehicleDetails>, int) GetVehicles(string vehicleId, Pagination pageInfo, IdleModel idleModel)
         {
-
-
             var vehicles = GetVehiclesFromDb(vehicleId, pageInfo, idleModel);
             var vehicleList = GetVehicleList(vehicles.Item1);
 
@@ -202,30 +200,6 @@ namespace TrackService.RethinkDb_Changefeed
             }
         }
 
-        public int IdDecryption(string id)
-        {
-            try
-            {
-                return _dataAccessRepository.IdDecryption(id);
-            }
-            catch (Exception ex)
-            {
-                return ReturnResponse.ExceptionResponse(ex);
-            }
-        }
-
-        public string IdEncryption(int id)
-        {
-            try
-            {
-                return _dataAccessRepository.IdEncryption(id);
-            }
-            catch (Exception ex)
-            {
-                return ReturnResponse.ExceptionResponse(ex);
-            }
-        }
-
         public bool CheckVehicleByInstitutionExists(string vehicleId, string institutionId)
         {
             try
@@ -279,7 +253,7 @@ namespace TrackService.RethinkDb_Changefeed
             DateTime startDate;
             DateTime endDate;
             Cursor<object> vehicles;
-            long count = 0;
+            int count = 0;
             DateTime.TryParse(Convert.ToString(idleModel.startAt), out startDate);
             DateTime.TryParse(Convert.ToString(idleModel.endAt), out endDate);
 
@@ -319,7 +293,7 @@ namespace TrackService.RethinkDb_Changefeed
                     count = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(new { isLive = false }).Count().Run(_rethinkDbConnection);
                 }
             }
-            return (vehicles, Convert.ToInt32(count));
+            return (vehicles, count);
         }
 
 

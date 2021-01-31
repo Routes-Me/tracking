@@ -7,6 +7,7 @@ using TrackService.Helper.ConnectionMapping;
 using TrackService.Models;
 using Microsoft.AspNetCore.Http;
 using System.Collections.Generic;
+using RoutesSecurity;
 
 namespace TrackService
 {
@@ -120,8 +121,8 @@ namespace TrackService
 
         public async void SendDataToDashboard(IHubContext<TrackServiceHub> context, string institutionId, string vehicleId, string json)
         {
-            int institutionIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(institutionId);
-            int vehicleIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(vehicleId);
+            int institutionIdDecrypted = Obfuscation.Decode(institutionId);
+            int vehicleIdDecrypted = Obfuscation.Decode(vehicleId);
 
             // Send data to admin screen
             foreach (var connectionid in _all.GetAll_ConnectionId("--all"))
@@ -152,9 +153,9 @@ namespace TrackService
 
                 if (!string.IsNullOrEmpty(institutionId) && !string.IsNullOrEmpty(vehicleId) && !string.IsNullOrEmpty(deviceId))
                 {
-                    int institutionIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(institutionId);
-                    int vehicleIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(vehicleId);
-                    int deviceIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(deviceId);
+                    int institutionIdDecrypted = Obfuscation.Decode(institutionId);
+                    int vehicleIdDecrypted = Obfuscation.Decode(vehicleId);
+                    int deviceIdDecrypted = Obfuscation.Decode(deviceId);
 
                     _deviceId.Add(Context.ConnectionId, deviceIdDecrypted.ToString());
                     _vehiclesId.Add(Context.ConnectionId, vehicleIdDecrypted.ToString());
@@ -180,7 +181,7 @@ namespace TrackService
             if (!string.IsNullOrEmpty(Context.GetHttpContext().Request.Query["vehicleId"]))
             {
                 var vehicleId = Context.GetHttpContext().Request.Query["vehicleId"].ToString();
-                int vehicleIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(vehicleId);
+                int vehicleIdDecrypted = Obfuscation.Decode(vehicleId);
                 _coordinateChangeFeedbackBackgroundService.ChangeVehicleStatus(vehicleIdDecrypted.ToString());
             }
             _all.RemoveAll(Context.ConnectionId);
@@ -196,7 +197,7 @@ namespace TrackService
         {
             if (!string.IsNullOrEmpty(institutionId))
             {
-                int institutionIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(institutionId);
+                int institutionIdDecrypted = Obfuscation.Decode(institutionId);
                 if (_coordinateChangeFeedbackBackgroundService.CheckInstitutionExists(institutionIdDecrypted.ToString()))
                 {
                     _institutions.Add(institutionIdDecrypted.ToString(), Context.ConnectionId);
@@ -217,7 +218,7 @@ namespace TrackService
         {
             if (!string.IsNullOrEmpty(vehicleId))
             {
-                int vehicleIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(vehicleId);
+                int vehicleIdDecrypted = Obfuscation.Decode(vehicleId);
                 if (_coordinateChangeFeedbackBackgroundService.CheckVehicleExists(vehicleIdDecrypted.ToString()))
                 {
                     _vehicles.Add(vehicleIdDecrypted.ToString(), Context.ConnectionId);
@@ -245,8 +246,8 @@ namespace TrackService
                 throw new Exception("{ \"code\":\"" + StatusCodes.Status400BadRequest + "\", \"message\":\"" + CommonMessage.BadRequestForInstitution + "\" }");
             }
 
-            int institutionIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(institutionId);
-            int vehicleIdDecrypted = _coordinateChangeFeedbackBackgroundService.IdDecryption(vehicleId);
+            int institutionIdDecrypted = Obfuscation.Decode(institutionId);
+            int vehicleIdDecrypted = Obfuscation.Decode(vehicleId);
             if (_coordinateChangeFeedbackBackgroundService.CheckVehicleByInstitutionExists(vehicleIdDecrypted.ToString(), institutionIdDecrypted.ToString()))
             {
                 _vehicles.Add(vehicleIdDecrypted.ToString(), Context.ConnectionId);

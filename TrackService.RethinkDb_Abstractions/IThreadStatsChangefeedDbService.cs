@@ -20,8 +20,6 @@ namespace TrackService.RethinkDb_Abstractions
         Task InsertMobiles(MobilesModel trackingStats);
         string GetVehicleId(string vehicleId);
         bool SuperInstitutions(string tokenInstitutionId);
-        int IdDecryption(string id);
-        string IdEncryption(int id);
         bool CheckVehicleByInstitutionExists(string vehicleId, string institutionId);
         void ClearLiveTrackingDatabase(string vehicleId);
     }

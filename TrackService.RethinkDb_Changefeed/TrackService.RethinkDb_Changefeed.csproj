@@ -19,8 +19,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="Obfuscation">
-      <HintPath>..\TrackService\SharedBin\Obfuscation.dll</HintPath>
+    <Reference Include="RoutesSecurity">
+      <HintPath>..\TrackService\DLL\RoutesSecurity.dll</HintPath>
     </Reference>
   </ItemGroup>
 

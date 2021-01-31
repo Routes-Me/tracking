@@ -50,7 +50,6 @@ namespace TrackService
                 updates = updates + "\",\"coordinates\": {\"latitude\": \"" + location.Latitude + "\", \"longitude\": \"" + location.Longitude + "\",\"timestamp\": \"" + location.Timestamp + "\"}}";
 
             }
-
         }
 
         public async void SendLocationFeeds(List<Location> locations)
@@ -61,7 +60,6 @@ namespace TrackService
         //Receive feeds
         public async void SendLocation(string locations)
         {
-
             Feeds feeds = Newtonsoft.Json.JsonConvert.DeserializeObject<Feeds>(locations);
 
             string instituitonId = Context.Items["InstitutionId"].ToString();
@@ -71,7 +69,6 @@ namespace TrackService
             //Console.WriteLine("Hub Log : vehicle ID  - " + vehicleId+ " - : START : ");
 
             Console.WriteLine("Hub Log : "+"vehicle ID  - " + vehicleId + " - Institution ID  - " + instituitonId + " - Device ID  - " + deviceId + " -");
-
 
             var lastUpdate = " !!!Empty location feeds!!!";
 
@@ -84,13 +81,10 @@ namespace TrackService
                 await Clients.Others.SendAsync("FeedsReceiver", feed);
             }
             
-
             //await PublishFeeds(feeds.SendLocation, Context);
             Console.WriteLine("Hub Log : vehicle ID  - " + vehicleId + " - : LAST FEED : " + lastUpdate);
             await Clients.Client(Context.ConnectionId).SendAsync("CommonMessage", "{ \"code\":\"200\", \"message\": Coordinates inserted */successfully\"\" }");
             //await Clients.Groups(instituitonId,"super").SendAsync("FeedsReceiver", updates);
-            
-            
         }
 
         //Receiver Subscribe

@@ -22,8 +22,6 @@ namespace TrackService.RethinkDb_Changefeed.DataAccess.Abstraction
         void SyncVehiclesToArchiveTable();
         Task InsertMobiles(MobilesModel mobileModel);
         bool SuperInstitutions(string tokenInstitutionId);
-        int IdDecryption(string id);
-        string IdEncryption(int id);
         bool CheckVehicleByInstitutionExists(string vehicleId, string institutionId);
         string GetVehicleId(string mobileId);
     }

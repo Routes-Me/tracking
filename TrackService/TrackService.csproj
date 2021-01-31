@@ -32,7 +32,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="SharedBin\" />
+    <Folder Include="DLL\" />
   </ItemGroup>
 
   <ItemGroup>
@@ -40,10 +40,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="Obfuscation">
-      <HintPath>SharedBin\Obfuscation.dll</HintPath>
+    <Reference Include="RoutesSecurity">
+      <HintPath>DLL\RoutesSecurity.dll</HintPath>
     </Reference>
   </ItemGroup>
-
 
 </Project>

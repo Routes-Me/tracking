@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Obfuscation;
+using RoutesSecurity;
 using RestSharp;
 using RethinkDb.Driver.Ast;
 using RethinkDb.Driver.Net;
@@ -157,16 +157,6 @@ namespace TrackService.RethinkDb_Changefeed.DataAccess.Repository
                 }
             }
             return vehicleId;
-        }
-
-        public int IdDecryption(string id)
-        {
-            return ObfuscationClass.DecodeId(Convert.ToInt32(id), _appSettings.PrimeInverse);
-        }
-
-        public string IdEncryption(int id)
-        {
-            return ObfuscationClass.EncodeId(id, _appSettings.Prime).ToString();
         }
 
         public Task InsertCordinates(CordinatesModel trackingStats)

@@ -4,6 +4,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using TrackService.RethinkDb_Abstractions;
+using RoutesSecurity;
 
 namespace TrackService.Helper
 {
@@ -30,8 +31,8 @@ namespace TrackService.Helper
             var idealVehicles = _coordinateChangeFeedbackBackgroundService.UpdateVehicleStatus();
             foreach (var item in idealVehicles)
             {
-                string vehicleIdEncrypted = _coordinateChangeFeedbackBackgroundService.IdEncryption(Convert.ToInt32(item.vehicleId));
-                string institutionIdEncrypted = _coordinateChangeFeedbackBackgroundService.IdEncryption(Convert.ToInt32(item.institutionId));
+                string vehicleIdEncrypted = Obfuscation.Encode(Convert.ToInt32(item.vehicleId));
+                string institutionIdEncrypted = Obfuscation.Encode(Convert.ToInt32(item.institutionId));
                 var json = "The vehicle " + vehicleIdEncrypted + " has gone into the offline state.";
                 trackServiceHub = new TrackServiceHub();
                 await Task.Run(() => { trackServiceHub.SendDataToDashboard(_hubContext, institutionIdEncrypted, vehicleIdEncrypted, json); }).ConfigureAwait(true); // Send notification to dashboard when any vehicle goes into offline state.

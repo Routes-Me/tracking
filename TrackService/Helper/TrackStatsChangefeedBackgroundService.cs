@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Hosting;
-using Obfuscation;
+using RoutesSecurity;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -41,9 +41,9 @@ namespace TrackService.Helper
                         var Latitude = newThreadStats.Split(",")[1].Replace("latitude:", "").Trim();
                         var Longitude = newThreadStats.Split(",")[2].Replace("longitude:", "").Trim();
                         var timestamp = newThreadStats.Split(",")[3].Replace("timestamp:", "").Trim();
-                        var institutionIdEncrypted = _coordinateChangeFeedbackBackgroundService.IdEncryption(Convert.ToInt32(InstitutionId));
-                        var vehicleIdEncrypted = _coordinateChangeFeedbackBackgroundService.IdEncryption(Convert.ToInt32(VehicleId));
-                        var deviceIdEncrypted = _coordinateChangeFeedbackBackgroundService.IdEncryption(Convert.ToInt32(DeviceId));
+                        var institutionIdEncrypted = Obfuscation.Encode(Convert.ToInt32(InstitutionId));
+                        var vehicleIdEncrypted = Obfuscation.Encode(Convert.ToInt32(VehicleId));
+                        var deviceIdEncrypted = Obfuscation.Encode(Convert.ToInt32(DeviceId));
                         var json = "{\"vehicleId\": \"" + vehicleIdEncrypted + "\",\"institutionId\": \"" + institutionIdEncrypted + "\",\"deviceId\": \"" + deviceIdEncrypted + "\",\"coordinates\": {\"latitude\": \"" + Latitude + "\", \"longitude\": \"" + Longitude + "\",\"timestamp\": \"" + timestamp + "\"}}";
                         trackServiceHub = new TrackServiceHub();
                         await Task.Run(() => { trackServiceHub.SendDataToDashboard(_hubContext, institutionIdEncrypted, vehicleIdEncrypted, json); }).ConfigureAwait(true); // To send data to all subscribe vehicled for admin
