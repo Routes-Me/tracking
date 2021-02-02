@@ -173,26 +173,37 @@ namespace TrackService.RethinkDb_Changefeed.DataAccess.Repository
         {
             DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
             dtDateTime = dtDateTime.AddSeconds(Convert.ToDouble(trackingStats.timestamp)).ToLocalTime();
+            MobileJSONResponse response;
             var vehicleId = Convert.ToInt32(trackingStats.mobileId);
             Cursor<object> vehicle = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(new { vehicleId = vehicleId }).Run(_rethinkDbConnection);
-            if (vehicle.BufferedSize > 0)
+            if (vehicle.BufferedSize == 0)
             {
-                MobileJSONResponse response = JsonConvert.DeserializeObject<MobileJSONResponse>(vehicle.BufferedItems[0].ToString());
-
-                _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME)
-                        .Filter(new { id = response.id })
-                        .Update(new { timestamp = dtDateTime, isLive = true }).Run(_rethinkDbConnection);
-
-                _rethinkDbSingleton.Db(DATABASE_NAME).Table(CORDINATE_TABLE_NAME).Insert(new Coordinates
-                {
-                    timestamp = dtDateTime,
-                    latitude = trackingStats.latitude,
-                    longitude = trackingStats.longitude,
-                    mobileId = response.id,
-                    deviceId = trackingStats.deviceId
-                }
-                ).Run(_rethinkDbConnection);
+                var createdVehicle = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Insert(new Mobiles
+                    {
+                        institutionId = trackingStats.institutionId,
+                        vehicleId = vehicleId,
+                        isLive = true,
+                        timestamp = DateTime.UtcNow
+                    }).Run(_rethinkDbConnection);
+                response = JsonConvert.DeserializeObject<MobileJSONResponse>(createdVehicle.ToString());
             }
+            else
+            {
+                response = JsonConvert.DeserializeObject<MobileJSONResponse>(vehicle.BufferedItems[0].ToString());
+                _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME)
+                    .Filter(new { id = response.id })
+                    .Update(new { timestamp = dtDateTime, isLive = true }).Run(_rethinkDbConnection);
+            }
+
+            _rethinkDbSingleton.Db(DATABASE_NAME).Table(CORDINATE_TABLE_NAME).Insert(new Coordinates
+            {
+                timestamp = dtDateTime,
+                latitude = trackingStats.latitude,
+                longitude = trackingStats.longitude,
+                mobileId = response.id,
+                deviceId = trackingStats.deviceId
+            }
+            ).Run(_rethinkDbConnection);
 
             return Task.CompletedTask;
         }

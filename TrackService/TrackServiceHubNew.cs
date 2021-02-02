@@ -6,12 +6,22 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
 using TrackService.Models;
+using TrackService.Abstraction;
+using TrackService.RethinkDb_Abstractions;
 
 namespace TrackService
 {
-    
+
     public class TrackServiceHubNew : Hub
     {
+        private readonly ILocationFeedsRepository  _locationsFeedsRepo;
+        private readonly ICoordinateChangeFeedbackBackgroundService _coordinateChangeFeedbackBackgroundService;
+        public TrackServiceHubNew(ILocationFeedsRepository  locationsFeedsRepo,
+                                  ICoordinateChangeFeedbackBackgroundService coordinateChangeFeedbackBackgroundService)
+        {
+            _locationsFeedsRepo = locationsFeedsRepo;
+            _coordinateChangeFeedbackBackgroundService = coordinateChangeFeedbackBackgroundService;
+        }
 
         //Sender Connection established
         public override async Task OnConnectedAsync()
@@ -61,16 +71,15 @@ namespace TrackService
         //Receive feeds
         public async void SendLocation(string locations)
         {
-
             Feeds feeds = Newtonsoft.Json.JsonConvert.DeserializeObject<Feeds>(locations);
 
-            string instituitonId = Context.Items["InstitutionId"].ToString();
+            string institutionId = Context.Items["InstitutionId"].ToString();
             string vehicleId = Context.Items["VehicleId"].ToString();
             string deviceId = Context.Items["DeviceId"].ToString();
 
             //Console.WriteLine("Hub Log : vehicle ID  - " + vehicleId+ " - : START : ");
 
-            Console.WriteLine("Hub Log : "+"vehicle ID  - " + vehicleId + " - Institution ID  - " + instituitonId + " - Device ID  - " + deviceId + " -");
+            Console.WriteLine("Hub Log : "+"vehicle ID  - " + vehicleId + " - Institution ID  - " + institutionId + " - Device ID  - " + deviceId + " -");
 
 
             var lastUpdate = " !!!Empty location feeds!!!";
@@ -79,9 +88,18 @@ namespace TrackService
             {
                 Location location = feeds.SendLocation.Last();
                 lastUpdate = feeds.SendLocation.Count() + " > location feed ::  Time -> " + location.Timestamp + " <- Location : Lat " + location.Latitude + " || " + "Long " + location.Longitude;
-                var feed = "{\"vehicleId\": \"" + vehicleId + "\",\"institutionId\": \"" + instituitonId + "\",\"deviceId\": \"" + deviceId + "\",\"coordinates\": {\"latitude\": \"" + location.Latitude + "\", \"longitude\": \"" + location.Longitude + "\",\"timestamp\": \"" + location.Timestamp + "\"}}";
+                var feed = "{\"vehicleId\": \"" + vehicleId + "\",\"institutionId\": \"" + institutionId + "\",\"deviceId\": \"" + deviceId + "\",\"coordinates\": {\"latitude\": \"" + location.Latitude + "\", \"longitude\": \"" + location.Longitude + "\",\"timestamp\": \"" + location.Timestamp + "\"}}";
 
                 await Clients.Others.SendAsync("FeedsReceiver", feed);
+                _locationsFeedsRepo.InsertLocationFeeds(new CordinatesModel
+                    {
+                        mobileId = vehicleId,
+                        longitude = location.Longitude,
+                        latitude = location.Latitude,
+                        timestamp = location.Timestamp.ToString(),
+                        deviceId = Convert.ToInt32(deviceId),
+                        institutionId = Convert.ToInt32(institutionId)
+                    });
             }
             
 

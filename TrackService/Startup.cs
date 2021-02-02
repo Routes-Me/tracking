@@ -22,6 +22,8 @@ using System.Threading.Tasks;
 using TrackService.Helper;
 using TrackService.RethinkDb_Changefeed.DataAccess.Abstraction;
 using TrackService.RethinkDb_Changefeed.DataAccess.Repository;
+using TrackService.Abstraction;
+using TrackService.Repository;
 
 namespace TrackService
 {
@@ -51,7 +53,10 @@ namespace TrackService
             services.AddSingleton<IRethinkDbStore, RethinkDbStore>();
             services.AddSingleton<TrackServiceHub, TrackServiceHub>();
             services.AddSingleton<IDataAccessRepository, DataAccessRepository>();
+            services.AddSingleton<ILocationFeedsRepository, LocationFeedsRepository>();
             
+            services.AddHostedService<QueuedHostedService>();
+            services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
 
             services.AddCors(c =>
             {
