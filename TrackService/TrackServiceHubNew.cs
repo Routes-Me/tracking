@@ -15,12 +15,9 @@ namespace TrackService
     public class TrackServiceHubNew : Hub
     {
         private readonly ILocationFeedsRepository  _locationsFeedsRepo;
-        private readonly ICoordinateChangeFeedbackBackgroundService _coordinateChangeFeedbackBackgroundService;
-        public TrackServiceHubNew(ILocationFeedsRepository  locationsFeedsRepo,
-                                  ICoordinateChangeFeedbackBackgroundService coordinateChangeFeedbackBackgroundService)
+        public TrackServiceHubNew(ILocationFeedsRepository  locationsFeedsRepo)
         {
             _locationsFeedsRepo = locationsFeedsRepo;
-            _coordinateChangeFeedbackBackgroundService = coordinateChangeFeedbackBackgroundService;
         }
 
         //Sender Connection established

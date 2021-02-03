@@ -19,8 +19,7 @@ namespace TrackService.Repository
 
         public IBackgroundTaskQueue TaskQueue { get; }
 
-        protected async override Task ExecuteAsync(
-            CancellationToken cancellationToken)
+        protected async override Task ExecuteAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation("Queued Hosted Service is starting.");
 

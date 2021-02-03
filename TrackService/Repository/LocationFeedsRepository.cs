@@ -21,7 +21,7 @@ namespace TrackService.Repository
             _serviceScopeFactory = serviceScopeFactory;
             _dataAccessRepo = dataAccessRepo;
         }
-        public dynamic InsertLocationFeeds(CordinatesModel cordinatesModel)
+        public void InsertLocationFeeds(CordinatesModel cordinatesModel)
         {
             Queue.QueueBackgroundWorkItem(async token =>
             {
@@ -36,8 +36,6 @@ namespace TrackService.Repository
                 _logger.LogInformation(
                     "Queued Background Task {Guid} is complete.", guid);
             });
-
-            return true;
         }
     }
 }

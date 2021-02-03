@@ -4,6 +4,6 @@ namespace TrackService.Abstraction
 {
     public interface ILocationFeedsRepository
     {
-        dynamic InsertLocationFeeds(CordinatesModel cordinatesModel);
+        void InsertLocationFeeds(CordinatesModel cordinatesModel);
     }
 }

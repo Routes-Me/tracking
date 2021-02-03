@@ -173,7 +173,7 @@ namespace TrackService.RethinkDb_Changefeed.DataAccess.Repository
         {
             DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
             dtDateTime = dtDateTime.AddSeconds(Convert.ToDouble(trackingStats.timestamp)).ToLocalTime();
-            MobileJSONResponse response;
+            MobileJSONResponse response = new MobileJSONResponse();
             var vehicleId = Convert.ToInt32(trackingStats.mobileId);
             Cursor<object> vehicle = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(new { vehicleId = vehicleId }).Run(_rethinkDbConnection);
             if (vehicle.BufferedSize == 0)
@@ -184,8 +184,8 @@ namespace TrackService.RethinkDb_Changefeed.DataAccess.Repository
                         vehicleId = vehicleId,
                         isLive = true,
                         timestamp = DateTime.UtcNow
-                    }).Run(_rethinkDbConnection);
-                response = JsonConvert.DeserializeObject<MobileJSONResponse>(createdVehicle.ToString());
+                    }).RunWrite(_rethinkDbConnection);
+                response.id = createdVehicle.GeneratedKeys[0].ToString();
             }
             else
             {
