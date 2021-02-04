@@ -99,27 +99,6 @@ namespace TrackService.RethinkDb_Changefeed.DataAccess.Repository
                 return false;
         }
 
-        public Task EnsureDatabaseCreated()
-        {
-            if (!((string[])_rethinkDbSingleton.DbList().Run(_rethinkDbConnection).ToObject<string[]>()).Contains(DATABASE_NAME))
-            {
-                _rethinkDbSingleton.DbCreate(DATABASE_NAME).Run(_rethinkDbConnection);
-            }
-
-            var database = _rethinkDbSingleton.Db(DATABASE_NAME);
-            if (!((string[])database.TableList().Run(_rethinkDbConnection).ToObject<string[]>()).Contains(MOBILE_TABLE_NAME))
-            {
-                database.TableCreate(MOBILE_TABLE_NAME).Run(_rethinkDbConnection);
-            }
-
-            if (!((string[])database.TableList().Run(_rethinkDbConnection).ToObject<string[]>()).Contains(CORDINATE_TABLE_NAME))
-            {
-                database.TableCreate(CORDINATE_TABLE_NAME).Run(_rethinkDbConnection);
-            }
-
-            return Task.CompletedTask;
-        }
-
         public async Task<IChangefeed<Coordinates>> GetCoordinatesChangeFeedback(CancellationToken cancellationToken)
         {
             return new RethinkDbChangefeed<Coordinates>(

@@ -50,7 +50,6 @@ namespace TrackService
 
             services.AddSingleton<IRethinkDbConnectionFactory, RethinkDbConnectionFactory>();
             services.AddSingleton<IRethinkDbStore, RethinkDbStore>();
-            services.AddSingleton<TrackServiceHub, TrackServiceHub>();
             services.AddSingleton<IDataAccessRepository, DataAccessRepository>();
             services.AddSingleton<ILocationFeedsRepository, LocationFeedsRepository>();
             

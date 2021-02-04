@@ -1,16 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using TrackService.RethinkDb_Abstractions;
-using TrackService.RethinkDb_Changefeed.DataAccess.Repository;
 
 namespace TrackService.RethinkDb_Changefeed.DataAccess.Abstraction
 {
     public interface IDataAccessRepository
     {
-        Task EnsureDatabaseCreated();
         Task InsertCordinates(CordinatesModel trackingStats);
         Task<IChangefeed<Coordinates>> GetCoordinatesChangeFeedback(CancellationToken cancellationToken);
         string GetInstitutionId(string mobileId);
