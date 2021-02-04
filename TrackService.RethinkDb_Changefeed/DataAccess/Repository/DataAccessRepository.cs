@@ -330,18 +330,25 @@ namespace TrackService.RethinkDb_Changefeed.DataAccess.Repository
                     Timestamp = timestamp
                 });
             }
-
             if (archiveCoordinates.Count > 0 && archiveCoordinates != null)
             {
-                var client = new RestClient(_appSettings.Host + _dependencies.ArchiveTrackServiceUrl);
-                var request = new RestRequest(Method.POST);
-                string jsonToSend = JsonConvert.SerializeObject(archiveCoordinates);
-                request.AddParameter("application/json; charset=utf-8", jsonToSend, ParameterType.RequestBody);
-                request.RequestFormat = DataFormat.Json;
-                IRestResponse response = client.Execute(request);
-                if (response.StatusCode == HttpStatusCode.Created)
+                const int pageSize = 120000;
+                int pages = archiveCoordinates.Count / pageSize;
+                List<ArchiveCoordinates> currentPage;
+
+                for (int i = 0 ; i <= pages ; i++)
                 {
-                    _rethinkDbSingleton.Db(DATABASE_NAME).Table(CORDINATE_TABLE_NAME).Filter(filterExpr).Delete().Run(_rethinkDbConnection);
+                    var client = new RestClient(_appSettings.Host + _dependencies.ArchiveTrackServiceUrl);
+                    var request = new RestRequest(Method.POST);
+                    currentPage = archiveCoordinates.Skip(i*pageSize).Take(pageSize).ToList();
+                    string jsonToSend = JsonConvert.SerializeObject(currentPage);
+                    request.AddParameter("application/json; charset=utf-8", jsonToSend, ParameterType.RequestBody);
+                    request.RequestFormat = DataFormat.Json;
+                    IRestResponse response = client.Execute(request);
+                    if (response.StatusCode == HttpStatusCode.Created)
+                    {
+                        _rethinkDbSingleton.Db(DATABASE_NAME).Table(CORDINATE_TABLE_NAME).Filter(filterExpr).Delete().Run(_rethinkDbConnection);
+                    }
                 }
             }
         }
