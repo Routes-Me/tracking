@@ -47,7 +47,6 @@ namespace TrackService
             });
             #endregion
             services.AddServerSentEvents();
-            services.AddThreadStats();
 
             services.AddSingleton<IRethinkDbConnectionFactory, RethinkDbConnectionFactory>();
             services.AddSingleton<IRethinkDbStore, RethinkDbStore>();
@@ -75,14 +74,12 @@ namespace TrackService
             services.AddCronJob<SyncCoordinates>(c =>
             {
                c.TimeZoneInfo = TimeZoneInfo.Utc;
-              // c.CronExpression = @"0 1 */1 * * "; // Run every day at 1 AM
                c.CronExpression = @"0 * * * *"; // Runs every hour
             });
 
             services.AddCronJob<SyncVehicles>(c =>
             {
                c.TimeZoneInfo = TimeZoneInfo.Utc;
-                //c.CronExpression = @"0 3 */7 * * "; // Run every 7 day at 3 AM
                c.CronExpression = @"0 * * * *"; // Runs every hour
             });
 

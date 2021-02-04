@@ -334,13 +334,12 @@ namespace TrackService.RethinkDb_Changefeed.DataAccess.Repository
             {
                 const int pageSize = 120000;
                 int pages = archiveCoordinates.Count / pageSize;
-                List<ArchiveCoordinates> currentPage;
 
                 for (int i = 0 ; i <= pages ; i++)
                 {
                     var client = new RestClient(_appSettings.Host + _dependencies.ArchiveTrackServiceUrl);
                     var request = new RestRequest(Method.POST);
-                    currentPage = archiveCoordinates.Skip(i*pageSize).Take(pageSize).ToList();
+                    List<ArchiveCoordinates> currentPage = archiveCoordinates.Skip(i*pageSize).Take(pageSize).ToList();
                     string jsonToSend = JsonConvert.SerializeObject(currentPage);
                     request.AddParameter("application/json; charset=utf-8", jsonToSend, ParameterType.RequestBody);
                     request.RequestFormat = DataFormat.Json;
