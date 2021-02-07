@@ -60,7 +60,7 @@ namespace TrackService
             return  "{\"vehicleId\": \"" + vehicleId + "\",\"institutionId\": \"" + instituitonId + "\",\"deviceId\": \"" + deviceId + "\",\"coordinates\": {\"latitude\": \"" + location.Latitude + "\", \"longitude\": \"" + location.Longitude + "\",\"timestamp\": \"" + location.Timestamp + "\"}}";
         }
 
-        public async void SendLocations(List<Location> locations)
+        public async void SendLocation(List<Location> locations)
         {
             await PublishFeeds(locations);
         }
