@@ -107,7 +107,7 @@ namespace TrackService
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(appSettings.Secret)),
                     // verify signature to avoid tampering
-                    ValidateLifetime = true, // validate the expiration
+                    ValidateLifetime = false, // validate the expiration
                     RequireExpirationTime = true,
                     ClockSkew = TimeSpan.FromMilliseconds(0) // tolerance for the expiration date
                 };
@@ -173,8 +173,8 @@ namespace TrackService
             app.UseHttpsRedirection();
             app.UseRouting();
 
-            //app.UseAuthentication();
-            //app.UseAuthorization();
+            app.UseAuthentication();
+            app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
             {
