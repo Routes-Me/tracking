@@ -42,8 +42,8 @@ namespace TrackService
                     await _coordinateChangeFeedbackBackgroundService.InsertCordinates(new CordinatesModel
                     {
                         mobileId = _vehiclesId.GetVehicleId(Context.ConnectionId).ToString(),
-                        longitude = location.Longitude,
-                        latitude = location.Latitude,
+                        //longitude = location.Longitude,
+                        //latitude = location.Latitude,
                         timestamp = location.Timestamp.ToString(),
                         deviceId = Convert.ToInt32(_deviceId.GetDeviceId(Context.ConnectionId))
                     });

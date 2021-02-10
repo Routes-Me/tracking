@@ -88,7 +88,7 @@ namespace TrackService
         private async void SubscribeFeeds(string institutionId)
         {
             var claimData = GetUserClaimsData();
-            if (claimData.Privilege.Equals("super"))
+            if (IsSuperUserAccess(claimData.Privilege))
             {
                 await Groups.AddToGroupAsync(Context.ConnectionId, "super");
             }
@@ -100,6 +100,15 @@ namespace TrackService
                 }
                 await Groups.AddToGroupAsync(Context.ConnectionId, institutionId);
             }
+        }
+
+        private bool IsSuperUserAccess(string role)
+        {
+            if (role.Equals("super") || role.Equals("support"))
+            {
+                return true;
+            }
+            return false;
         }
 
         //Receiver Unsubscribe

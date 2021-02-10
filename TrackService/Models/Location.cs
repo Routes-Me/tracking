@@ -10,7 +10,7 @@ namespace TrackService.Models
     {
         public decimal Latitude { get; set; }
         public decimal Longitude { get; set; }
-        public string Timestamp { get; set; }
+        public long Timestamp { get; set; }
         public int DeviceId { get; set; }
     }
 }
