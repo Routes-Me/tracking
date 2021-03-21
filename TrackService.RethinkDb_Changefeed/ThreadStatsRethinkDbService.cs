@@ -42,18 +42,6 @@ namespace TrackService.RethinkDb_Changefeed
             _dataAccessRepository = dataAccessRepository;
         }
 
-        public Task EnsureDatabaseCreated()
-        {
-            try
-            {
-                return _dataAccessRepository.EnsureDatabaseCreated();
-            }
-            catch (Exception ex)
-            {
-                return ReturnResponse.ExceptionResponse(ex);
-            }
-        }
-
         public Task InsertCordinates(CordinatesModel trackingStats)
         {
             try
@@ -88,8 +76,6 @@ namespace TrackService.RethinkDb_Changefeed
             return (vehicleList, vehicles.Item2);
 
         }
-
-
 
         public string GetInstitutionId(string mobileId)
         {

@@ -6,12 +6,19 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
 using TrackService.Models;
+using TrackService.Abstraction;
+using TrackService.RethinkDb_Abstractions;
 
 namespace TrackService
 {
-    
+
     public class TrackServiceHubNew : Hub
     {
+        private readonly ILocationFeedsRepository  _locationsFeedsRepo;
+        public TrackServiceHubNew(ILocationFeedsRepository  locationsFeedsRepo)
+        {
+            _locationsFeedsRepo = locationsFeedsRepo;
+        }
 
         //Sender Connection established
         public override async Task OnConnectedAsync()
@@ -60,17 +67,45 @@ namespace TrackService
             return  "{\"vehicleId\": \"" + vehicleId + "\",\"institutionId\": \"" + instituitonId + "\",\"deviceId\": \"" + deviceId + "\",\"coordinates\": {\"latitude\": \"" + location.Latitude + "\", \"longitude\": \"" + location.Longitude + "\",\"timestamp\": \"" + location.Timestamp + "\"}}";
         }
 
+
+        public async Task PublishAndSave(IEnumerable<Location> locations) {
+             // publish feeds
+             await PublishFeeds(locations);
+
+             
+            // then save
+            string institutionId = Context.Items["InstitutionId"].ToString();
+            string vehicleId = Context.Items["VehicleId"].ToString();
+            string deviceId = Context.Items["DeviceId"].ToString();
+
+
+
+            Location location = locations.Last();
+
+
+            // TODO: insert an array of location 
+            _locationsFeedsRepo.InsertLocationFeeds(new CordinatesModel
+                {
+                    mobileId = vehicleId,
+                    longitude = location.Longitude,
+                    latitude = location.Latitude,
+                    timestamp = location.Timestamp.ToString(),
+                    deviceId = Convert.ToInt32(deviceId),
+                    institutionId = Convert.ToInt32(institutionId)
+                });
+        }
+
         public async void SendLocations(List<Location> locations)
         {
-            await PublishFeeds(locations);
+           await PublishAndSave(locations: locations);
         }
 
         public async void SendLocation(string locations)
         {
             Feeds feeds = Newtonsoft.Json.JsonConvert.DeserializeObject<Feeds>(locations);
-
-            await PublishFeeds(feeds.SendLocation);
+            await PublishAndSave(feeds.SendLocation);
         }
+
 
         //Receiver Subscribe
         public async void Subscribe(string institutionId, string vehicleId, string deviceId)
@@ -81,7 +116,6 @@ namespace TrackService
             }catch(Exception ex)
             {
                 await Clients.Client(Context.ConnectionId).SendAsync("CommonMessage", ex.Message);
-
             }
         }
 

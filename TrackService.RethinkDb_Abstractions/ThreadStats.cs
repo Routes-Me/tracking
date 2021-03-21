@@ -20,6 +20,7 @@ namespace TrackService.RethinkDb_Abstractions
     {
         public string mobileId { get; set; }
         public int deviceId { get; set; }
+        public int institutionId { get; set; }
         public decimal longitude { get; set; }
         public decimal latitude { get; set; }
         public string timestamp { get; set; }
