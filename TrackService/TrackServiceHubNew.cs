@@ -8,6 +8,9 @@ using System.Threading.Tasks;
 using TrackService.Models;
 using TrackService.Abstraction;
 using TrackService.RethinkDb_Abstractions;
+using TrackService.RethinkDb_Changefeed.Model.Common;
+using Microsoft.Extensions.Options;
+using Obfuscation;
 
 namespace TrackService
 {
@@ -15,9 +18,11 @@ namespace TrackService
     public class TrackServiceHubNew : Hub
     {
         private readonly ILocationFeedsRepository  _locationsFeedsRepo;
-        public TrackServiceHubNew(ILocationFeedsRepository  locationsFeedsRepo)
+        private readonly AppSettings _appSettings;
+        public TrackServiceHubNew(ILocationFeedsRepository  locationsFeedsRepo, IOptions<AppSettings> appSettings)
         {
             _locationsFeedsRepo = locationsFeedsRepo;
+            _appSettings = appSettings.Value;
         }
 
         //Sender Connection established
@@ -68,31 +73,16 @@ namespace TrackService
         }
 
 
-        public async Task PublishAndSave(IEnumerable<Location> locations) {
-             // publish feeds
+        public async Task PublishAndSave(List<Location> locations) 
+        {
              await PublishFeeds(locations);
 
-             
-            // then save
-            string institutionId = Context.Items["InstitutionId"].ToString();
-            string vehicleId = Context.Items["VehicleId"].ToString();
-            string deviceId = Context.Items["DeviceId"].ToString();
+            int institutionId = ObfuscationClass.DecodeId(Convert.ToInt32(Context.Items["InstitutionId"]), _appSettings.PrimeInverse);
+            int vehicleId = ObfuscationClass.DecodeId(Convert.ToInt32(Context.Items["VehicleId"]), _appSettings.PrimeInverse);
+            int deviceId = ObfuscationClass.DecodeId(Convert.ToInt32(Context.Items["DeviceId"]), _appSettings.PrimeInverse);
+            locations.ForEach(l => l.DeviceId = deviceId);
 
-
-
-            Location location = locations.Last();
-
-
-            // TODO: insert an array of location 
-            _locationsFeedsRepo.InsertLocationFeeds(new CordinatesModel
-                {
-                    mobileId = vehicleId,
-                    longitude = location.Longitude,
-                    latitude = location.Latitude,
-                    timestamp = location.Timestamp.ToString(),
-                    deviceId = Convert.ToInt32(deviceId),
-                    institutionId = Convert.ToInt32(institutionId)
-                });
+            _locationsFeedsRepo.InsertLocationFeeds(locations, institutionId, vehicleId);
         }
 
         public async void SendLocations(List<Location> locations)

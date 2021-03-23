@@ -42,11 +42,11 @@ namespace TrackService.RethinkDb_Changefeed
             _dataAccessRepository = dataAccessRepository;
         }
 
-        public Task InsertCordinates(CordinatesModel trackingStats)
+        public Task InsertCordinates(List<Location> locations, int institutionId, int vehicleId)
         {
             try
             {
-                return _dataAccessRepository.InsertCordinates(trackingStats);
+                return _dataAccessRepository.InsertCordinates(locations, institutionId, vehicleId);
             }
             catch (Exception ex)
             {

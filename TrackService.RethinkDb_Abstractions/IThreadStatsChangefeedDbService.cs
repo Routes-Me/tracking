@@ -6,7 +6,7 @@ namespace TrackService.RethinkDb_Abstractions
 {
     public interface ICoordinateChangeFeedbackBackgroundService
     {
-        Task InsertCordinates(CordinatesModel trackingStats);
+        Task InsertCordinates(List<Location> locations, int institutionId, int vehicleId);
         List<IdealVehicleResponse> UpdateVehicleStatus();
         void ChangeVehicleStatus(string vehicleId);
         string GetInstitutionId(string mobileId);

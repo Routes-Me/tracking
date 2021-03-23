@@ -148,18 +148,15 @@ namespace TrackService.RethinkDb_Changefeed.DataAccess.Repository
             return ObfuscationClass.EncodeId(id, _appSettings.Prime).ToString();
         }
 
-        public Task InsertCordinates(CordinatesModel trackingStats)
+        public Task InsertCordinates(List<Location> locations, int institutionId, int vehicleId)
         {
-            DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
-            dtDateTime = dtDateTime.AddSeconds(Convert.ToDouble(trackingStats.timestamp)).ToLocalTime();
             MobileJSONResponse response = new MobileJSONResponse();
-            var vehicleId = Convert.ToInt32(trackingStats.mobileId);
             Cursor<object> vehicle = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(new { vehicleId = vehicleId }).Run(_rethinkDbConnection);
             if (vehicle.BufferedSize == 0)
             {
                 var createdVehicle = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Insert(new Mobiles
                     {
-                        institutionId = trackingStats.institutionId,
+                        institutionId = institutionId,
                         vehicleId = vehicleId,
                         isLive = true,
                         timestamp = DateTime.UtcNow
@@ -171,18 +168,10 @@ namespace TrackService.RethinkDb_Changefeed.DataAccess.Repository
                 response = JsonConvert.DeserializeObject<MobileJSONResponse>(vehicle.BufferedItems[0].ToString());
                 _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME)
                     .Filter(new { id = response.id })
-                    .Update(new { timestamp = dtDateTime, isLive = true }).Run(_rethinkDbConnection);
+                    .Update(new { timestamp = locations.LastOrDefault().Timestamp, isLive = true }).Run(_rethinkDbConnection);
             }
-
-            _rethinkDbSingleton.Db(DATABASE_NAME).Table(CORDINATE_TABLE_NAME).Insert(new Coordinates
-            {
-                timestamp = dtDateTime,
-                latitude = trackingStats.latitude,
-                longitude = trackingStats.longitude,
-                mobileId = response.id,
-                deviceId = trackingStats.deviceId
-            }
-            ).Run(_rethinkDbConnection);
+            locations.ForEach(location => location.MobileId = response.id);
+            _rethinkDbSingleton.Db(DATABASE_NAME).Table(CORDINATE_TABLE_NAME).Insert(locations).Run(_rethinkDbConnection);
 
             return Task.CompletedTask;
         }

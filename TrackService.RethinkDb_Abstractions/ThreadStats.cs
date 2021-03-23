@@ -16,6 +16,20 @@ namespace TrackService.RethinkDb_Abstractions
         }
     }
 
+    public class Feeds
+    {
+        public List<Location> SendLocation { get; set; }
+    }
+
+    public class Location
+    {
+        public decimal Latitude { get; set; }
+        public decimal Longitude { get; set; }
+        public long Timestamp { get; set; }
+        public int DeviceId { get; set; }
+        public string MobileId { get; set; }
+    }
+
     public class CordinatesModel
     {
         public string mobileId { get; set; }

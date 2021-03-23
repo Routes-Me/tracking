@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using System.Collections.Generic;
 using TrackService.Abstraction;
 using TrackService.RethinkDb_Abstractions;
 using TrackService.RethinkDb_Changefeed.DataAccess.Abstraction;
@@ -21,7 +22,7 @@ namespace TrackService.Repository
             _serviceScopeFactory = serviceScopeFactory;
             _dataAccessRepo = dataAccessRepo;
         }
-        public void InsertLocationFeeds(CordinatesModel cordinatesModel)
+        public void InsertLocationFeeds(List<Location> locations, int institutionId, int vehicleId)
         {
             Queue.QueueBackgroundWorkItem(async token =>
             {
@@ -30,7 +31,7 @@ namespace TrackService.Repository
                 using (var scope = _serviceScopeFactory.CreateScope())
                 {
                     var scopedServices = scope.ServiceProvider;
-                    await _dataAccessRepo.InsertCordinates(cordinatesModel);
+                    await _dataAccessRepo.InsertCordinates(locations, institutionId, vehicleId);
                 }
 
                 _logger.LogInformation(
