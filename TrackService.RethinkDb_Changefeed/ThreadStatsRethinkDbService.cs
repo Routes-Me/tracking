@@ -188,30 +188,6 @@ namespace TrackService.RethinkDb_Changefeed
             }
         }
 
-        public int IdDecryption(string id)
-        {
-            try
-            {
-                return _dataAccessRepository.IdDecryption(id);
-            }
-            catch (Exception ex)
-            {
-                return ReturnResponse.ExceptionResponse(ex);
-            }
-        }
-
-        public string IdEncryption(int id)
-        {
-            try
-            {
-                return _dataAccessRepository.IdEncryption(id);
-            }
-            catch (Exception ex)
-            {
-                return ReturnResponse.ExceptionResponse(ex);
-            }
-        }
-
         public bool CheckVehicleByInstitutionExists(string vehicleId, string institutionId)
         {
             try

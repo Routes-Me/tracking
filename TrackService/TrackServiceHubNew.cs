@@ -10,7 +10,7 @@ using TrackService.Abstraction;
 using TrackService.RethinkDb_Abstractions;
 using TrackService.RethinkDb_Changefeed.Model.Common;
 using Microsoft.Extensions.Options;
-using Obfuscation;
+using RoutesSecurity;
 
 namespace TrackService
 {
@@ -77,9 +77,9 @@ namespace TrackService
         {
              await PublishFeeds(locations);
 
-            int institutionId = ObfuscationClass.DecodeId(Convert.ToInt32(Context.Items["InstitutionId"]), _appSettings.PrimeInverse);
-            int vehicleId = ObfuscationClass.DecodeId(Convert.ToInt32(Context.Items["VehicleId"]), _appSettings.PrimeInverse);
-            int deviceId = ObfuscationClass.DecodeId(Convert.ToInt32(Context.Items["DeviceId"]), _appSettings.PrimeInverse);
+            int institutionId = Obfuscation.Decode(Context.Items["InstitutionId"].ToString());
+            int vehicleId = Obfuscation.Decode(Context.Items["VehicleId"].ToString());
+            int deviceId = Obfuscation.Decode(Context.Items["DeviceId"].ToString());
             locations.ForEach(l => l.DeviceId = deviceId);
 
             _locationsFeedsRepo.InsertLocationFeeds(locations, institutionId, vehicleId);
