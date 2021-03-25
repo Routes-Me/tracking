@@ -22,7 +22,7 @@ namespace TrackService.Repository
             _serviceScopeFactory = serviceScopeFactory;
             _dataAccessRepo = dataAccessRepo;
         }
-        public void InsertLocationFeeds(List<Location> locations, int institutionId, int vehicleId)
+        public void InsertLocationFeeds(VehicleData vehicleData)
         {
             Queue.QueueBackgroundWorkItem(async token =>
             {
@@ -31,7 +31,7 @@ namespace TrackService.Repository
                 using (var scope = _serviceScopeFactory.CreateScope())
                 {
                     var scopedServices = scope.ServiceProvider;
-                    await _dataAccessRepo.InsertCordinates(locations, institutionId, vehicleId);
+                    await _dataAccessRepo.InsertCordinates(vehicleData);
                 }
 
                 _logger.LogInformation(

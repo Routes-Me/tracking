@@ -72,6 +72,14 @@ namespace TrackService.RethinkDb_Abstractions
         }
     }
 
+    public class VehicleData
+    {
+        public int DeviceId { get; set; }
+        public int VehicleId { get; set; }
+        public int InstitutionId { get; set; }
+        public List<Location> Locations { get; set; }
+    }
+
     public class IdleModel
     {
         public string status { get; set; }

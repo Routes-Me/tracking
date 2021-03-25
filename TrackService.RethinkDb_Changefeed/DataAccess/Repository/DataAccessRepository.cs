@@ -138,16 +138,16 @@ namespace TrackService.RethinkDb_Changefeed.DataAccess.Repository
             return vehicleId;
         }
 
-        public Task InsertCordinates(List<Location> locations, int institutionId, int vehicleId)
+        public Task InsertCordinates(VehicleData vehicleData)
         {
             MobileJSONResponse response = new MobileJSONResponse();
-            Cursor<object> vehicle = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(new { vehicleId = vehicleId }).Run(_rethinkDbConnection);
+            Cursor<object> vehicle = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(new { vehicleId = vehicleData.VehicleId }).Run(_rethinkDbConnection);
             if (vehicle.BufferedSize == 0)
             {
                 var createdVehicle = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Insert(new Mobiles
                     {
-                        institutionId = institutionId,
-                        vehicleId = vehicleId,
+                        institutionId = vehicleData.InstitutionId,
+                        vehicleId = vehicleData.VehicleId,
                         isLive = true,
                         timestamp = DateTime.UtcNow
                     }).RunWrite(_rethinkDbConnection);
@@ -158,10 +158,13 @@ namespace TrackService.RethinkDb_Changefeed.DataAccess.Repository
                 response = JsonConvert.DeserializeObject<MobileJSONResponse>(vehicle.BufferedItems[0].ToString());
                 _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME)
                     .Filter(new { id = response.id })
-                    .Update(new { timestamp = locations.LastOrDefault().Timestamp, isLive = true }).Run(_rethinkDbConnection);
+                    .Update(new { timestamp = vehicleData.Locations.LastOrDefault().Timestamp, isLive = true }).Run(_rethinkDbConnection);
             }
-            locations.ForEach(location => location.MobileId = response.id);
-            _rethinkDbSingleton.Db(DATABASE_NAME).Table(CORDINATE_TABLE_NAME).Insert(locations).Run(_rethinkDbConnection);
+            vehicleData.Locations.ForEach(location => {
+                location.MobileId = response.id;
+                location.DeviceId = vehicleData.DeviceId;
+            });
+            _rethinkDbSingleton.Db(DATABASE_NAME).Table(CORDINATE_TABLE_NAME).Insert(vehicleData.Locations).Run(_rethinkDbConnection);
 
             return Task.CompletedTask;
         }

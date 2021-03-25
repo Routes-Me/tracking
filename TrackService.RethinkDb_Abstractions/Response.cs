@@ -56,6 +56,6 @@ namespace TrackService.RethinkDb_Abstractions
     public class VehicleResponse : Response
     {
         public Pagination pagination { get; set; }
-        public List<VehicleData> data { get; set; }
+        public List<VehicleDetails> data { get; set; }
     }
 }

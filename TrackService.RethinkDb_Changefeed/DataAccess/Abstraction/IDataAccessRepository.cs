@@ -7,7 +7,7 @@ namespace TrackService.RethinkDb_Changefeed.DataAccess.Abstraction
 {
     public interface IDataAccessRepository
     {
-        Task InsertCordinates(List<Location> locations, int institutionId, int vehicleId);
+        Task InsertCordinates(VehicleData vehicleData);
         Task<IChangefeed<Coordinates>> GetCoordinatesChangeFeedback(CancellationToken cancellationToken);
         string GetInstitutionId(string mobileId);
         bool CheckVehicleExists(string vehicleId);

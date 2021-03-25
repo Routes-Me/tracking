@@ -34,12 +34,14 @@ namespace TrackService
                 string vehicleId = Context.GetHttpContext().Request.Query["vehicleId"].ToString();
                 string deviceId = Context.GetHttpContext().Request.Query["deviceId"].ToString();
 
+                institutionId = string.IsNullOrEmpty(institutionId) ? institutionId : Obfuscation.Decode(institutionId).ToString();
+                vehicleId = string.IsNullOrEmpty(vehicleId) ? vehicleId : Obfuscation.Decode(vehicleId).ToString();
+                deviceId = string.IsNullOrEmpty(deviceId) ? deviceId : Obfuscation.Decode(deviceId).ToString();
+
                 Context.Items.Add("InstitutionId", institutionId);
                 Context.Items.Add("VehicleId", vehicleId);
                 Context.Items.Add("DeviceId", deviceId);
-
             }
-
             await base.OnConnectedAsync();
         }
 
@@ -48,7 +50,6 @@ namespace TrackService
         {
             await base.OnDisconnectedAsync(ex);
         }
-
 
         private async Task PublishFeeds(IEnumerable<Location> locations)
         {
@@ -75,14 +76,8 @@ namespace TrackService
 
         public async Task PublishAndSave(List<Location> locations) 
         {
-             await PublishFeeds(locations);
-
-            int institutionId = Obfuscation.Decode(Context.Items["InstitutionId"].ToString());
-            int vehicleId = Obfuscation.Decode(Context.Items["VehicleId"].ToString());
-            int deviceId = Obfuscation.Decode(Context.Items["DeviceId"].ToString());
-            locations.ForEach(l => l.DeviceId = deviceId);
-
-            _locationsFeedsRepo.InsertLocationFeeds(locations, institutionId, vehicleId);
+            await PublishFeeds(locations);
+            SaveFeeds(locations);
         }
 
         public async void SendLocations(List<Location> locations)
@@ -185,5 +180,16 @@ namespace TrackService
             return userClaimsData;
         }
 
+        private void SaveFeeds(List<Location> locations)
+        {
+            VehicleData vehicleData = new VehicleData
+            {
+                InstitutionId = Convert.ToInt32(Context.Items["InstitutionId"]),
+                VehicleId = Convert.ToInt32(Context.Items["VehicleId"]),
+                DeviceId = Convert.ToInt32(Context.Items["DeviceId"]),
+                Locations = locations
+            };
+            _locationsFeedsRepo.InsertLocationFeeds(vehicleData);
+        }
     }
 }
