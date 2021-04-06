@@ -16,10 +16,25 @@ namespace TrackService.RethinkDb_Abstractions
         }
     }
 
+    public class Feeds
+    {
+        public List<Location> SendLocation { get; set; }
+    }
+
+    public class Location
+    {
+        public decimal Latitude { get; set; }
+        public decimal Longitude { get; set; }
+        public long Timestamp { get; set; }
+        public int DeviceId { get; set; }
+        public string MobileId { get; set; }
+    }
+
     public class CordinatesModel
     {
         public string mobileId { get; set; }
         public int deviceId { get; set; }
+        public int institutionId { get; set; }
         public decimal longitude { get; set; }
         public decimal latitude { get; set; }
         public string timestamp { get; set; }
@@ -55,6 +70,14 @@ namespace TrackService.RethinkDb_Abstractions
         {
             return $"mobileId: {mobileId}, latitude: {latitude}, longitude: {longitude}, timestamp: {timestamp}, deviceId: {deviceId}";
         }
+    }
+
+    public class VehicleData
+    {
+        public int DeviceId { get; set; }
+        public int VehicleId { get; set; }
+        public int InstitutionId { get; set; }
+        public List<Location> Locations { get; set; }
     }
 
     public class IdleModel

@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Obfuscation;
+using RoutesSecurity;
 using RestSharp;
 using RethinkDb.Driver.Ast;
 using RethinkDb.Driver.Net;
@@ -99,27 +99,6 @@ namespace TrackService.RethinkDb_Changefeed.DataAccess.Repository
                 return false;
         }
 
-        public Task EnsureDatabaseCreated()
-        {
-            if (!((string[])_rethinkDbSingleton.DbList().Run(_rethinkDbConnection).ToObject<string[]>()).Contains(DATABASE_NAME))
-            {
-                _rethinkDbSingleton.DbCreate(DATABASE_NAME).Run(_rethinkDbConnection);
-            }
-
-            var database = _rethinkDbSingleton.Db(DATABASE_NAME);
-            if (!((string[])database.TableList().Run(_rethinkDbConnection).ToObject<string[]>()).Contains(MOBILE_TABLE_NAME))
-            {
-                database.TableCreate(MOBILE_TABLE_NAME).Run(_rethinkDbConnection);
-            }
-
-            if (!((string[])database.TableList().Run(_rethinkDbConnection).ToObject<string[]>()).Contains(CORDINATE_TABLE_NAME))
-            {
-                database.TableCreate(CORDINATE_TABLE_NAME).Run(_rethinkDbConnection);
-            }
-
-            return Task.CompletedTask;
-        }
-
         public async Task<IChangefeed<Coordinates>> GetCoordinatesChangeFeedback(CancellationToken cancellationToken)
         {
             return new RethinkDbChangefeed<Coordinates>(
@@ -159,40 +138,33 @@ namespace TrackService.RethinkDb_Changefeed.DataAccess.Repository
             return vehicleId;
         }
 
-        public int IdDecryption(string id)
+        public Task InsertCordinates(VehicleData vehicleData)
         {
-            return ObfuscationClass.DecodeId(Convert.ToInt32(id), _appSettings.PrimeInverse);
-        }
-
-        public string IdEncryption(int id)
-        {
-            return ObfuscationClass.EncodeId(id, _appSettings.Prime).ToString();
-        }
-
-        public Task InsertCordinates(CordinatesModel trackingStats)
-        {
-            DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
-            dtDateTime = dtDateTime.AddSeconds(Convert.ToDouble(trackingStats.timestamp)).ToLocalTime();
-            var vehicleId = Convert.ToInt32(trackingStats.mobileId);
-            Cursor<object> vehicle = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(new { vehicleId = vehicleId }).Run(_rethinkDbConnection);
-            if (vehicle.BufferedSize > 0)
+            MobileJSONResponse response = new MobileJSONResponse();
+            Cursor<object> vehicle = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Filter(new { vehicleId = vehicleData.VehicleId }).Run(_rethinkDbConnection);
+            if (vehicle.BufferedSize == 0)
             {
-                MobileJSONResponse response = JsonConvert.DeserializeObject<MobileJSONResponse>(vehicle.BufferedItems[0].ToString());
-
-                _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME)
-                        .Filter(new { id = response.id })
-                        .Update(new { timestamp = dtDateTime, isLive = true }).Run(_rethinkDbConnection);
-
-                _rethinkDbSingleton.Db(DATABASE_NAME).Table(CORDINATE_TABLE_NAME).Insert(new Coordinates
-                {
-                    timestamp = dtDateTime,
-                    latitude = trackingStats.latitude,
-                    longitude = trackingStats.longitude,
-                    mobileId = response.id,
-                    deviceId = trackingStats.deviceId
-                }
-                ).Run(_rethinkDbConnection);
+                var createdVehicle = _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME).Insert(new Mobiles
+                    {
+                        institutionId = vehicleData.InstitutionId,
+                        vehicleId = vehicleData.VehicleId,
+                        isLive = true,
+                        timestamp = DateTime.UtcNow
+                    }).RunWrite(_rethinkDbConnection);
+                response.id = createdVehicle.GeneratedKeys[0].ToString();
             }
+            else
+            {
+                response = JsonConvert.DeserializeObject<MobileJSONResponse>(vehicle.BufferedItems[0].ToString());
+                _rethinkDbSingleton.Db(DATABASE_NAME).Table(MOBILE_TABLE_NAME)
+                    .Filter(new { id = response.id })
+                    .Update(new { timestamp = vehicleData.Locations.LastOrDefault().Timestamp, isLive = true }).Run(_rethinkDbConnection);
+            }
+            vehicleData.Locations.ForEach(location => {
+                location.MobileId = response.id;
+                location.DeviceId = vehicleData.DeviceId;
+            });
+            _rethinkDbSingleton.Db(DATABASE_NAME).Table(CORDINATE_TABLE_NAME).Insert(vehicleData.Locations).Run(_rethinkDbConnection);
 
             return Task.CompletedTask;
         }
@@ -319,18 +291,24 @@ namespace TrackService.RethinkDb_Changefeed.DataAccess.Repository
                     Timestamp = timestamp
                 });
             }
-
             if (archiveCoordinates.Count > 0 && archiveCoordinates != null)
             {
-                var client = new RestClient(_appSettings.Host + _dependencies.ArchiveTrackServiceUrl);
-                var request = new RestRequest(Method.POST);
-                string jsonToSend = JsonConvert.SerializeObject(archiveCoordinates);
-                request.AddParameter("application/json; charset=utf-8", jsonToSend, ParameterType.RequestBody);
-                request.RequestFormat = DataFormat.Json;
-                IRestResponse response = client.Execute(request);
-                if (response.StatusCode == HttpStatusCode.Created)
+                const int pageSize = 120000;
+                int pages = archiveCoordinates.Count / pageSize;
+
+                for (int i = 0 ; i <= pages ; i++)
                 {
-                    _rethinkDbSingleton.Db(DATABASE_NAME).Table(CORDINATE_TABLE_NAME).Filter(filterExpr).Delete().Run(_rethinkDbConnection);
+                    var client = new RestClient(_appSettings.Host + _dependencies.ArchiveTrackServiceUrl);
+                    var request = new RestRequest(Method.POST);
+                    List<ArchiveCoordinates> currentPage = archiveCoordinates.Skip(i*pageSize).Take(pageSize).ToList();
+                    string jsonToSend = JsonConvert.SerializeObject(currentPage);
+                    request.AddParameter("application/json; charset=utf-8", jsonToSend, ParameterType.RequestBody);
+                    request.RequestFormat = DataFormat.Json;
+                    IRestResponse response = client.Execute(request);
+                    if (response.StatusCode == HttpStatusCode.Created)
+                    {
+                        _rethinkDbSingleton.Db(DATABASE_NAME).Table(CORDINATE_TABLE_NAME).Filter(filterExpr).Delete().Run(_rethinkDbConnection);
+                    }
                 }
             }
         }

@@ -42,23 +42,11 @@ namespace TrackService.RethinkDb_Changefeed
             _dataAccessRepository = dataAccessRepository;
         }
 
-        public Task EnsureDatabaseCreated()
+        public Task InsertCordinates(VehicleData vehicleData)
         {
             try
             {
-                return _dataAccessRepository.EnsureDatabaseCreated();
-            }
-            catch (Exception ex)
-            {
-                return ReturnResponse.ExceptionResponse(ex);
-            }
-        }
-
-        public Task InsertCordinates(CordinatesModel trackingStats)
-        {
-            try
-            {
-                return _dataAccessRepository.InsertCordinates(trackingStats);
+                return _dataAccessRepository.InsertCordinates(vehicleData);
             }
             catch (Exception ex)
             {
@@ -88,8 +76,6 @@ namespace TrackService.RethinkDb_Changefeed
             return (vehicleList, vehicles.Item2);
 
         }
-
-
 
         public string GetInstitutionId(string mobileId)
         {
@@ -195,30 +181,6 @@ namespace TrackService.RethinkDb_Changefeed
             try
             {
                 return _dataAccessRepository.SuperInstitutions(tokenInstitutionId);
-            }
-            catch (Exception ex)
-            {
-                return ReturnResponse.ExceptionResponse(ex);
-            }
-        }
-
-        public int IdDecryption(string id)
-        {
-            try
-            {
-                return _dataAccessRepository.IdDecryption(id);
-            }
-            catch (Exception ex)
-            {
-                return ReturnResponse.ExceptionResponse(ex);
-            }
-        }
-
-        public string IdEncryption(int id)
-        {
-            try
-            {
-                return _dataAccessRepository.IdEncryption(id);
             }
             catch (Exception ex)
             {

@@ -22,6 +22,8 @@ using System.Threading.Tasks;
 using TrackService.Helper;
 using TrackService.RethinkDb_Changefeed.DataAccess.Abstraction;
 using TrackService.RethinkDb_Changefeed.DataAccess.Repository;
+using TrackService.Abstraction;
+using TrackService.Repository;
 
 namespace TrackService
 {
@@ -45,13 +47,14 @@ namespace TrackService
             });
             #endregion
             services.AddServerSentEvents();
-            services.AddThreadStats();
 
             services.AddSingleton<IRethinkDbConnectionFactory, RethinkDbConnectionFactory>();
             services.AddSingleton<IRethinkDbStore, RethinkDbStore>();
-            services.AddSingleton<TrackServiceHub, TrackServiceHub>();
             services.AddSingleton<IDataAccessRepository, DataAccessRepository>();
+            services.AddSingleton<ILocationFeedsRepository, LocationFeedsRepository>();
             
+            services.AddHostedService<QueuedHostedService>();
+            services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
 
             services.AddCors(c =>
             {
@@ -67,19 +70,17 @@ namespace TrackService
                 hubOptions.EnableDetailedErrors = true;
             });
 
-            //services.AddCronJob<SyncCoordinates>(c =>
-            //{
-            //    c.TimeZoneInfo = TimeZoneInfo.Utc;
-            //   // c.CronExpression = @"0 1 */1 * * "; // Run every day at 1 AM
-            //    c.CronExpression = @"*/4 * * * *"; // Run every 4 minutes
-            //});
+            services.AddCronJob<SyncCoordinates>(c =>
+            {
+               c.TimeZoneInfo = TimeZoneInfo.Utc;
+               c.CronExpression = @"0 * * * *"; // Runs every hour
+            });
 
-            //services.AddCronJob<SyncVehicles>(c =>
-            //{
-            //    c.TimeZoneInfo = TimeZoneInfo.Utc;
-            //     //c.CronExpression = @"0 3 */7 * * "; // Run every 7 day at 3 AM
-            //    c.CronExpression = @"*/8 * * * *"; // Run every 8 minutes
-            //});
+            services.AddCronJob<SyncVehicles>(c =>
+            {
+               c.TimeZoneInfo = TimeZoneInfo.Utc;
+               c.CronExpression = @"0 * * * *"; // Runs every hour
+            });
 
             var appSettingsSection = Configuration.GetSection("AppSettings");
             services.Configure<AppSettings>(appSettingsSection);

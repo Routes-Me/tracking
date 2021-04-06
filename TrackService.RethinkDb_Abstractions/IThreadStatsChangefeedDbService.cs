@@ -6,8 +6,7 @@ namespace TrackService.RethinkDb_Abstractions
 {
     public interface ICoordinateChangeFeedbackBackgroundService
     {
-        Task EnsureDatabaseCreated();
-        Task InsertCordinates(CordinatesModel trackingStats);
+        Task InsertCordinates(VehicleData vehicleData);
         List<IdealVehicleResponse> UpdateVehicleStatus();
         void ChangeVehicleStatus(string vehicleId);
         string GetInstitutionId(string mobileId);
@@ -20,8 +19,6 @@ namespace TrackService.RethinkDb_Abstractions
         Task InsertMobiles(MobilesModel trackingStats);
         string GetVehicleId(string vehicleId);
         bool SuperInstitutions(string tokenInstitutionId);
-        int IdDecryption(string id);
-        string IdEncryption(int id);
         bool CheckVehicleByInstitutionExists(string vehicleId, string institutionId);
         void ClearLiveTrackingDatabase(string vehicleId);
     }

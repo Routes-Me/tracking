@@ -6,12 +6,24 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
 using TrackService.Models;
+using TrackService.Abstraction;
+using TrackService.RethinkDb_Abstractions;
+using TrackService.RethinkDb_Changefeed.Model.Common;
+using Microsoft.Extensions.Options;
+using RoutesSecurity;
 
 namespace TrackService
 {
-    
+
     public class TrackServiceHubNew : Hub
     {
+        private readonly ILocationFeedsRepository  _locationsFeedsRepo;
+        private readonly AppSettings _appSettings;
+        public TrackServiceHubNew(ILocationFeedsRepository  locationsFeedsRepo, IOptions<AppSettings> appSettings)
+        {
+            _locationsFeedsRepo = locationsFeedsRepo;
+            _appSettings = appSettings.Value;
+        }
 
         //Sender Connection established
         public override async Task OnConnectedAsync()
@@ -22,12 +34,14 @@ namespace TrackService
                 string vehicleId = Context.GetHttpContext().Request.Query["vehicleId"].ToString();
                 string deviceId = Context.GetHttpContext().Request.Query["deviceId"].ToString();
 
+                institutionId = string.IsNullOrEmpty(institutionId) ? institutionId : Obfuscation.Decode(institutionId).ToString();
+                vehicleId = string.IsNullOrEmpty(vehicleId) ? vehicleId : Obfuscation.Decode(vehicleId).ToString();
+                deviceId = string.IsNullOrEmpty(deviceId) ? deviceId : Obfuscation.Decode(deviceId).ToString();
+
                 Context.Items.Add("InstitutionId", institutionId);
                 Context.Items.Add("VehicleId", vehicleId);
                 Context.Items.Add("DeviceId", deviceId);
-
             }
-
             await base.OnConnectedAsync();
         }
 
@@ -36,7 +50,6 @@ namespace TrackService
         {
             await base.OnDisconnectedAsync(ex);
         }
-
 
         private async Task PublishFeeds(IEnumerable<Location> locations)
         {
@@ -60,17 +73,24 @@ namespace TrackService
             return  "{\"vehicleId\": \"" + vehicleId + "\",\"institutionId\": \"" + instituitonId + "\",\"deviceId\": \"" + deviceId + "\",\"coordinates\": {\"latitude\": \"" + location.Latitude + "\", \"longitude\": \"" + location.Longitude + "\",\"timestamp\": \"" + location.Timestamp + "\"}}";
         }
 
-        public async void SendLocations(List<Location> locations)
+
+        public async Task PublishAndSave(List<Location> locations) 
         {
             await PublishFeeds(locations);
+            SaveFeeds(locations);
+        }
+
+        public async void SendLocations(List<Location> locations)
+        {
+           await PublishAndSave(locations: locations);
         }
 
         public async void SendLocation(string locations)
         {
             Feeds feeds = Newtonsoft.Json.JsonConvert.DeserializeObject<Feeds>(locations);
-
-            await PublishFeeds(feeds.SendLocation);
+            await PublishAndSave(feeds.SendLocation);
         }
+
 
         //Receiver Subscribe
         public async void Subscribe(string institutionId, string vehicleId, string deviceId)
@@ -81,7 +101,6 @@ namespace TrackService
             }catch(Exception ex)
             {
                 await Clients.Client(Context.ConnectionId).SendAsync("CommonMessage", ex.Message);
-
             }
         }
 
@@ -161,5 +180,16 @@ namespace TrackService
             return userClaimsData;
         }
 
+        private void SaveFeeds(List<Location> locations)
+        {
+            VehicleData vehicleData = new VehicleData
+            {
+                InstitutionId = Convert.ToInt32(Context.Items["InstitutionId"]),
+                VehicleId = Convert.ToInt32(Context.Items["VehicleId"]),
+                DeviceId = Convert.ToInt32(Context.Items["DeviceId"]),
+                Locations = locations
+            };
+            _locationsFeedsRepo.InsertLocationFeeds(vehicleData);
+        }
     }
 }
