@@ -11,7 +11,8 @@ using VehicleDetails = TrackService.RethinkDb_Abstractions.VehicleDetails;
 namespace TrackService.Controllers
 {
     [ApiController]
-    [Route("api")]
+    [ApiVersion( "1.0" )]
+    [Route("v{version:apiVersion}/")]
     public class VehicleController : ControllerBase
     {
         readonly static ConnectionMapping<string> _connections = new ConnectionMapping<string>();

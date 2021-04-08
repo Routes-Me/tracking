@@ -13,13 +13,7 @@ using TrackService.RethinkDb_Changefeed;
 using TrackService.Helper.CronJobServices;
 using TrackService.Helper.CronJobServices.CronJobExtensionMethods;
 using TrackService.RethinkDb_Changefeed.Model.Common;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
-using Newtonsoft.Json;
-using Microsoft.AspNetCore.Http;
-using System.Threading.Tasks;
-using TrackService.Helper;
+using Microsoft.AspNetCore.Mvc;
 using TrackService.RethinkDb_Changefeed.DataAccess.Abstraction;
 using TrackService.RethinkDb_Changefeed.DataAccess.Repository;
 using TrackService.Abstraction;
@@ -89,72 +83,14 @@ namespace TrackService
             var dependenciessSection = Configuration.GetSection("Dependencies");
             services.Configure<Dependencies>(dependenciessSection);
 
-            services.Configure<RethinkDbOptions>(Configuration.GetSection("RethinkDbDev"));
-            services.AddAuthentication(options =>
+            services.AddApiVersioning(config =>
             {
-                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-            }).AddJwtBearer(x =>
-            {
-                x.RequireHttpsMetadata = false;
-                x.SaveToken = true;
-                x.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuer = true,
-                    ValidateAudience = true,
-                    ValidAudience = appSettings.ValidAudience,
-                    ValidIssuer = appSettings.ValidIssuer,
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(appSettings.Secret)),
-                    // verify signature to avoid tampering
-                    ValidateLifetime = false, // validate the expiration
-                    RequireExpirationTime = true,
-                    ClockSkew = TimeSpan.FromMilliseconds(0) // tolerance for the expiration date
-                };
-                x.Events = new JwtBearerEvents
-                {
-                    OnAuthenticationFailed = context =>
-                    {
-                        var logger = context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger(nameof(JwtBearerEvents));
-                        logger.LogError("Authentication failed.", context.Exception);
-                        context.Response.StatusCode = 401;
-                        if (context.Exception.GetType() == typeof(SecurityTokenExpiredException))
-                        {
-                            context.Response.Headers.Add("Token-Expired", "true");
-                        }
-                        context.Response.OnStarting(async () =>
-                        {
-                            context.Response.ContentType = "application/json";
-                            ErrorMessage errorMessage = new ErrorMessage();
-                            errorMessage.Message = "Authentication failed.";
-                            await context.Response.WriteAsync(JsonConvert.SerializeObject(errorMessage));
-                        });
-                        return Task.CompletedTask;
-                    },
-
-                    OnMessageReceived = context =>
-                    {
-                        string accessToken = context.Request.Query["access_token"];
-
-                        // If the request is for our hub...
-                        var path = context.HttpContext.Request.Path;
-                        if (!string.IsNullOrEmpty(accessToken) &&
-                            (path.StartsWithSegments("/trackServiceHub")))
-                        {
-                            // Read the token out of the query string
-                            context.Token = accessToken;
-                        }
-                        return Task.CompletedTask;
-                    },
-                    OnChallenge = context =>
-                    {
-                        var logger = context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger(nameof(JwtBearerEvents));
-                        logger.LogError("OnChallenge error", context.Error, context.ErrorDescription);
-                        return Task.CompletedTask;
-                    }
-                };
+                config.DefaultApiVersion = new ApiVersion(1, 0);
+                config.AssumeDefaultVersionWhenUnspecified = true;
+                config.ReportApiVersions = true;
             });
+
+            services.Configure<RethinkDbOptions>(Configuration.GetSection("RethinkDbDev"));
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILoggerFactory loggerFactory, IRethinkDbConnectionFactory connectionFactory, IRethinkDbStore store)
