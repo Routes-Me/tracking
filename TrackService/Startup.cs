@@ -34,10 +34,10 @@ namespace TrackService
         {
             services.AddControllers();
             #region RethinkDB
-            Console.WriteLine(Configuration.GetSection("RethinkDbDev").GetValue<String>("Host"));
+            Console.WriteLine(Configuration.GetSection("Rethinkdb").GetValue<String>("Host"));
             services.AddRethinkDb(options =>
             {
-                options.Host = Configuration.GetSection("RethinkDbDev").GetValue<String>("Host"); // "172.17.0.6";
+                options.Host = Configuration.GetSection("Rethinkdb").GetValue<String>("Host"); // "172.17.0.6";
             });
             #endregion
             services.AddServerSentEvents();
@@ -90,7 +90,7 @@ namespace TrackService
                 config.ReportApiVersions = true;
             });
 
-            services.Configure<RethinkDbOptions>(Configuration.GetSection("RethinkDbDev"));
+            services.Configure<RethinkDbOptions>(Configuration.GetSection("Rethinkdb"));
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILoggerFactory loggerFactory, IRethinkDbConnectionFactory connectionFactory, IRethinkDbStore store)
