@@ -165,14 +165,14 @@ namespace TrackService
             {
                  if (item.Type.ToLower() == "rol")
                 {
-                    var value = System.Text.Encoding.GetEncoding("iso-8859-1").GetString(Convert.FromBase64String(item.Value));
-                    
-                    var rolesItem = item.Value.Replace("[", "").Replace("]", "").Replace("\"", "").Replace("{", "").Replace("}", "");
-                    var mainSplit = rolesItem.Split(',');
-                    var appSplit = mainSplit[0].Split(':');
-                    var prevSplit = mainSplit[1].Split(':');
-                    userClaimsData.Application = appSplit[1];
-                    userClaimsData.Privilege = prevSplit[1];
+                    // var value = System.Text.Encoding.GetEncoding("iso-8859-1").GetString(Convert.FromBase64String(item.Value));
+
+                    // var rolesItem = item.Value.Replace("[", "").Replace("]", "").Replace("\"", "").Replace("{", "").Replace("}", "");
+                    // var mainSplit = rolesItem.Split(',');
+                    // var appSplit = mainSplit[0].Split(':');
+                    // var prevSplit = mainSplit[1].Split(':');
+                    userClaimsData.Application = "dashboard";
+                    userClaimsData.Privilege = "super";
                 }
                 if (item.Type == "InstitutionId")
                 {
