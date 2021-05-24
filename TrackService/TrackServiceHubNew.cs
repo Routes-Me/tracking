@@ -163,8 +163,10 @@ namespace TrackService
             var user = Context.User;
             foreach (var item in user.Claims)
             {
-                if (item.Type.ToLower() == "roles")
+                 if (item.Type.ToLower() == "rol")
                 {
+                    var value = System.Text.Encoding.GetEncoding("iso-8859-1").GetString(Convert.FromBase64String(item.Value));
+                    
                     var rolesItem = item.Value.Replace("[", "").Replace("]", "").Replace("\"", "").Replace("{", "").Replace("}", "");
                     var mainSplit = rolesItem.Split(',');
                     var appSplit = mainSplit[0].Split(':');
