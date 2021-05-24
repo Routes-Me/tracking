@@ -77,7 +77,7 @@ namespace TrackService
         public async Task PublishAndSave(List<Location> locations) 
         {
             await PublishFeeds(locations);
-            SaveFeeds(locations);
+            // SaveFeeds(locations);
         }
 
         public async void SendLocations(List<Location> locations)
