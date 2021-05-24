@@ -154,14 +154,7 @@ namespace TrackService.RethinkDb_Abstractions
         public string id { get; set;  }
         public int vehicleId { get; set; }
         public int institutionId { get; set; }
-        public timestamp timestamp { get; set; }
+        public long timestamp { get; set; }
         public bool isLive { get; set; }
-    }
-
-    public class timestamp
-    {
-        public string reql_type { get; set; }
-        public decimal epoch_time { get; set; }
-        public string timezone { get; set; }
     }
 }
