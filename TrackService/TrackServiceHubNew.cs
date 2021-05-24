@@ -11,18 +11,19 @@ using TrackService.RethinkDb_Abstractions;
 using TrackService.RethinkDb_Changefeed.Model.Common;
 using Microsoft.Extensions.Options;
 using RoutesSecurity;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace TrackService
 {
 
+    [Authorize] // (AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)
     public class TrackServiceHubNew : Hub
     {
-        private readonly ILocationFeedsRepository  _locationsFeedsRepo;
-        private readonly AppSettings _appSettings;
-        public TrackServiceHubNew(ILocationFeedsRepository  locationsFeedsRepo, IOptions<AppSettings> appSettings)
+        // private readonly ILocationFeedsRepository  _locationsFeedsRepo;
+        public TrackServiceHubNew() // ILocationFeedsRepository  locationsFeedsRepo,
         {
-            _locationsFeedsRepo = locationsFeedsRepo;
-            _appSettings = appSettings.Value;
+            // _locationsFeedsRepo = locationsFeedsRepo;
+          
         }
 
         //Sender Connection established
@@ -191,7 +192,7 @@ namespace TrackService
                 DeviceId = Convert.ToInt32(Context.Items["DeviceId"]),
                 Locations = locations
             };
-            _locationsFeedsRepo.InsertLocationFeeds(vehicleData);
+            // _locationsFeedsRepo.InsertLocationFeeds(vehicleData);
         }
     }
 }

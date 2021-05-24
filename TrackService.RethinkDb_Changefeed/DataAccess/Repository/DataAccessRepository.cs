@@ -210,11 +210,11 @@ namespace TrackService.RethinkDb_Changefeed.DataAccess.Repository
         public bool SuperInstitutions(string tokenInstitutionId)
         {
             bool isSuperInstitutions = false;
-            foreach (var item in _appSettings.AllowedSuperInstitutions)
-            {
-                if (item == tokenInstitutionId)
-                    isSuperInstitutions = true;
-            }
+            // foreach (var item in _appSettings.AllowedSuperInstitutions)
+            // {
+            //     if (item == tokenInstitutionId)
+            //         isSuperInstitutions = true;
+            // }
             return isSuperInstitutions;
         }
 
