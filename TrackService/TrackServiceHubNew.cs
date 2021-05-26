@@ -16,7 +16,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 namespace TrackService
 {
 
-    [Authorize] // (AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)
+    // [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public class TrackServiceHubNew : Hub
     {
         // private readonly ILocationFeedsRepository  _locationsFeedsRepo;
@@ -124,11 +124,11 @@ namespace TrackService
 
         private bool IsSuperUserAccess(string role)
         {
-            if (role.Equals("super") || role.Equals("support"))
-            {
-                return true;
-            }
-            return false;
+            // if (role.Equals("super") || role.Equals("support"))
+            // {
+            //     return true;
+            // }
+            return true;
         }
 
         //Receiver Unsubscribe

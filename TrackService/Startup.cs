@@ -55,33 +55,12 @@ namespace TrackService
             // services.AddHostedService<QueuedHostedService>();
             // services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
 
-            // services.AddCors(c =>
-            // {
-            //     c.AddPolicy("AllowOrigin", options => options.AllowAnyOrigin());
-            // });
-
-
-
-            services.AddSignalR();
-            services.AddSignalR(hubOptions =>
+            services.AddCors(c =>
             {
-                hubOptions.MaximumReceiveMessageSize = 10240 * 3;  // bytes
-                hubOptions.KeepAliveInterval = TimeSpan.FromMinutes(3);
-                hubOptions.ClientTimeoutInterval = TimeSpan.FromMinutes(6);
-                hubOptions.EnableDetailedErrors = true;
+                c.AddPolicy("AllowOrigin", options => options.AllowAnyOrigin());
             });
 
-            // services.AddCronJob<SyncCoordinates>(c =>
-            // {
-            //    c.TimeZoneInfo = TimeZoneInfo.Utc;
-            //    c.CronExpression = @"0 * * * *"; // Runs every hour
-            // });
-
-            // services.AddCronJob<SyncVehicles>(c =>
-            // {
-            //    c.TimeZoneInfo = TimeZoneInfo.Utc;
-            //    c.CronExpression = @"0 * * * *"; // Runs every hour
-            // });
+           
 
             var dependenciessSection = Configuration.GetSection("Dependencies");
             services.Configure<Dependencies>(dependenciessSection);
@@ -105,61 +84,64 @@ namespace TrackService
 
             #region JWT
             
-            JwtBearerEvents jwtBearerEvents = new JwtBearerEvents
-            {
-                OnAuthenticationFailed = context =>
-                {
-                    var logger = context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger(nameof(JwtBearerEvents));
-                    logger.LogError("Authentication failed.", context.Exception);
-                    context.Response.StatusCode = 401;
-                    if (context.Exception.GetType() == typeof(SecurityTokenExpiredException))
-                    {
-                        context.Response.Headers.Add("Token-Expired", "true");
-                    }
-                    context.Response.OnStarting(async () =>
-                    {
-                        context.Response.ContentType = "application/json";
-                        await context.Response.WriteAsync("Authentication failed.");
-                    });
-                    return Task.CompletedTask;
-                },
-                OnMessageReceived = context =>
-                    {
-                        string accessToken = context.Request.Query["access_token"];
-                        Console.WriteLine("########################################");
-                        Console.WriteLine(accessToken);
-                        Console.WriteLine("########################################");
-                        // If the request is for our hub...
-                        var path = context.HttpContext.Request.Path;
-                        if (!string.IsNullOrEmpty(accessToken) &&
-                            (path.StartsWithSegments("/trackServiceHub")))
-                        {
-                            // Read the token out of the query string
-                            context.Token = accessToken;
-                        }
-                        return Task.CompletedTask;
-                    },
-                OnChallenge = context =>
-                {
-                    var logger = context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger(nameof(JwtBearerEvents));
-                    logger.LogError("OnChallenge error", context.Error, context.ErrorDescription);
-                    return Task.CompletedTask;
-                }
-            };
+            // JwtBearerEvents jwtBearerEvents = new JwtBearerEvents
+            // {
+            //     OnAuthenticationFailed = context =>
+            //     {
+            //         var logger = context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger(nameof(JwtBearerEvents));
+            //         logger.LogError("Authentication failed.", context.Exception);
+            //         context.Response.StatusCode = 401;
+            //         if (context.Exception.GetType() == typeof(SecurityTokenExpiredException))
+            //         {
+            //             context.Response.Headers.Add("Token-Expired", "true");
+            //         }
+            //         context.Response.OnStarting(async () =>
+            //         {
+            //             context.Response.ContentType = "application/json";
+            //             await context.Response.WriteAsync("Authentication failed.");
+            //         });
+            //         return Task.CompletedTask;
+            //     },
+            //     OnMessageReceived = context =>
+            //         {
+            //             string accessToken = context.Request.Headers["Authorization"];
+            //             Console.WriteLine("########################################");
+            //             Console.WriteLine(accessToken);
+            //             Console.WriteLine("########################################");
+            //             // If the request is for our hub...
+            //             var path = context.HttpContext.Request.Path;
+            //             if (!string.IsNullOrEmpty(accessToken) &&
+            //                 (path.StartsWithSegments("/trackServiceHub")))
+            //             {
+            //                 // Read the token out of the query string
+            //                 context.Token = accessToken;
+            //             }
+            //             return Task.CompletedTask;
+            //         }
+            //     // OnChallenge = context =>
+            //     // {
+            //     //     var logger = context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger(nameof(JwtBearerEvents));
+            //     //     logger.LogError("OnChallenge error", context.Error, context.ErrorDescription);
+            //     //     return Task.CompletedTask;
+            //     // },
+            // };
 
             services.AddAuthentication(options =>
             {
+            //                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            // options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                 options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-            }).AddJwtBearer("sessionToken", x =>
+                // options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+            }).AddJwtBearer(x =>
             {
                 x.RequireHttpsMetadata = false;
-                x.SaveToken = true;
+                x.SaveToken = false;
                 x.TokenValidationParameters = new TokenValidationParameters
                 {
-                    ValidateIssuer = true,
-                    ValidateAudience = true,
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
                     ValidAudiences = new List<string>
                     {
                         appSettings.DashboardAudience,
@@ -168,16 +150,25 @@ namespace TrackService
                         appSettings.BusValidatorAudience
                     },
                     ValidIssuer = appSettings.SessionTokenIssuer,
-                    ValidateIssuerSigningKey = true,
+                    ValidateIssuerSigningKey = false,
                     IssuerSigningKey = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(appSettings.AccessSecretKey)),
                     // verify signature to avoid tampering
-                    ValidateLifetime = true, // validate the expiration
-                    RequireExpirationTime = true,
+                    ValidateLifetime = false, // validate the expiration
+                    RequireExpirationTime = false,
                     ClockSkew = TimeSpan.FromMinutes(5) // tolerance for the expiration date
                 };
-                x.Events = jwtBearerEvents;
+                // x.Events = jwtBearerEvents;
             });
             #endregion
+
+            services.AddSignalR();
+            services.AddSignalR(hubOptions =>
+            {
+                hubOptions.MaximumReceiveMessageSize = 10240 * 3;  // bytes
+                hubOptions.KeepAliveInterval = TimeSpan.FromMinutes(3);
+                hubOptions.ClientTimeoutInterval = TimeSpan.FromMinutes(6);
+                hubOptions.EnableDetailedErrors = true;
+            });
 
         }
 
