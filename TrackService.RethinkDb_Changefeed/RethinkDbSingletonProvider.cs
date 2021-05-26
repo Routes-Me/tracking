@@ -38,9 +38,9 @@ namespace TrackService.RethinkDb_Changefeed
                 rethinkDbConnection.Timeout(options.Value.Timeout);
             }
 
-            RethinkDbConnection = rethinkDbConnection.Connect();
+            // RethinkDbConnection = rethinkDbConnection.Connect();
 
-            RethinkDbSingleton = rethinkDbSingleton;
+            // RethinkDbSingleton = rethinkDbSingleton;
         }
 
         public void Dispose()
