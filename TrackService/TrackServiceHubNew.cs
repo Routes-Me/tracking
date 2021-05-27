@@ -35,10 +35,6 @@ namespace TrackService
                 string vehicleId = Context.GetHttpContext().Request.Query["vehicleId"].ToString();
                 string deviceId = Context.GetHttpContext().Request.Query["deviceId"].ToString();
 
-                institutionId = string.IsNullOrEmpty(institutionId) ? institutionId : Obfuscation.Decode(institutionId).ToString();
-                vehicleId = string.IsNullOrEmpty(vehicleId) ? vehicleId : Obfuscation.Decode(vehicleId).ToString();
-                deviceId = string.IsNullOrEmpty(deviceId) ? deviceId : Obfuscation.Decode(deviceId).ToString();
-
                 Context.Items.Add("InstitutionId", institutionId);
                 Context.Items.Add("VehicleId", vehicleId);
                 Context.Items.Add("DeviceId", deviceId);
