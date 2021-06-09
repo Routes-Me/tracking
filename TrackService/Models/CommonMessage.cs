@@ -12,5 +12,6 @@ namespace TrackService.Models
         public static string BadRequestForInstitution = "Bad request value. Invalid InstitutionId!";
         public static string VehicleNotFound = "Vehicle does not exists.";
         public static string BadRequestForVehicle = "Bad request value. Invalid VehicleId!";
+        public static string InstitutionIdNull = "InstitutionId is null!";
     }
 }
