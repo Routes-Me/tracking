@@ -64,8 +64,8 @@ namespace TrackService
 
             Location lastLocationFeed = locations.Last();
 
-            Console.WriteLine("Hub Log : " + "vehicle ID  - " + vehicleId + " - Institution ID  - " + instituitonId + " - Device ID  - " + deviceId + " -");
-            Console.WriteLine(locations.Count() + " > location feed ::  Time -> " + lastLocationFeed.Timestamp + " <- Location : Lat " + lastLocationFeed.Latitude + " || " + "Long " + lastLocationFeed.Longitude);
+            // Console.WriteLine("Hub Log : " + "vehicle ID  - " + vehicleId + " - Institution ID  - " + instituitonId + " - Device ID  - " + deviceId + " -");
+            // Console.WriteLine(locations.Count() + " > location feed ::  Time -> " + lastLocationFeed.Timestamp + " <- Location : Lat " + lastLocationFeed.Latitude + " || " + "Long " + lastLocationFeed.Longitude);
             var feed = FeedFormat(locations.Last(), vehicleId: vehicleId, instituitonId: rawInstitution, deviceId: deviceId);
 
             await Clients.Groups(instituitonId, "super").SendAsync("FeedsReceiver", feed); // locations.Last()
