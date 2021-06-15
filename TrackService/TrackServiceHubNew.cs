@@ -48,7 +48,7 @@ namespace TrackService
             await base.OnDisconnectedAsync(ex);
         }
 
-        private async Task PublishFeeds(IEnumerable<Location> locations)
+        private async Task PublishFeeds(Location location)
         {
 
             var rawInstitution = Context.Items["InstitutionId"].ToString();
@@ -62,25 +62,26 @@ namespace TrackService
             string vehicleId = Context.Items["VehicleId"].ToString();
             string deviceId = Context.Items["DeviceId"].ToString();
 
-            Location lastLocationFeed = locations.Last();
-
-            // Console.WriteLine("Hub Log : " + "vehicle ID  - " + vehicleId + " - Institution ID  - " + instituitonId + " - Device ID  - " + deviceId + " -");
-            // Console.WriteLine(locations.Count() + " > location feed ::  Time -> " + lastLocationFeed.Timestamp + " <- Location : Lat " + lastLocationFeed.Latitude + " || " + "Long " + lastLocationFeed.Longitude);
-            var feed = FeedFormat(locations.Last(), vehicleId: vehicleId, instituitonId: rawInstitution, deviceId: deviceId);
-
-            await Clients.Groups(instituitonId, "super").SendAsync("FeedsReceiver", feed); // locations.Last()
-            await Clients.Client(Context.ConnectionId).SendAsync("CommonMessage", "{ \"code\":\"200\", \"message\": Coordinates inserted */successfully\"\" }");
+            await Clients.Groups(instituitonId, "super").SendAsync("FeedsReceiver", FeedFormat(location, vehicleId: vehicleId, instituitonId: rawInstitution, deviceId: deviceId));
         }
 
         private string FeedFormat(Location location, string vehicleId, string instituitonId, string deviceId)
         {
             return  "{\"vehicleId\": \"" + vehicleId + "\",\"institutionId\": \"" + instituitonId + "\",\"deviceId\": \"" + deviceId + "\",\"coordinates\": {\"latitude\": \"" + location.Latitude + "\", \"longitude\": \"" + location.Longitude + "\",\"timestamp\": \"" + location.Timestamp + "\"}}";
+            // return new FeedsDto {
+            //     InstitutionId = instituitonId,
+            //     VehicleId = vehicleId,
+            //     DeviceId = deviceId,
+            //     Longitude = location.Longitude,
+            //     Latitude = location.Latitude,
+            //     Timestamp = location.Timestamp
+            // };
         }
 
 
         public async Task PublishAndSave(List<Location> locations) 
         {
-            await PublishFeeds(locations);
+            await PublishFeeds(locations.First());
             // SaveFeeds(locations);
         }
 

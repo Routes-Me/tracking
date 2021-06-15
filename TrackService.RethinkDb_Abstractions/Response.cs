@@ -58,4 +58,14 @@ namespace TrackService.RethinkDb_Abstractions
         public Pagination pagination { get; set; }
         public List<VehicleDetails> data { get; set; }
     }
+
+    public class FeedsDto
+    {
+        public string InstitutionId { get; set; }
+        public string VehicleId { get; set; }
+        public string DeviceId { get; set; }
+        public decimal Latitude { get; set; }
+        public decimal Longitude { get; set; }
+        public long Timestamp { get; set; }
+    }
 }
