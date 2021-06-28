@@ -23,21 +23,23 @@ namespace TrackService
         public TrackServiceHubNew() // ILocationFeedsRepository  locationsFeedsRepo,
         {
             // _locationsFeedsRepo = locationsFeedsRepo;
-          
+
         }
 
         //Sender Connection established
         public override async Task OnConnectedAsync()
         {
-            if(Context.GetHttpContext().Request.Query.Keys.Count > 1)
+            if (Context.GetHttpContext().Request.Query.Keys.Count > 1)
             {
                 string institutionId = Context.GetHttpContext().Request.Query["institutionId"].ToString();
                 string vehicleId = Context.GetHttpContext().Request.Query["vehicleId"].ToString();
                 string deviceId = Context.GetHttpContext().Request.Query["deviceId"].ToString();
+                string connectedAt = Context.GetHttpContext().Request.Query["connectedAt"].ToString();
 
                 Context.Items.Add("InstitutionId", institutionId);
                 Context.Items.Add("VehicleId", vehicleId);
                 Context.Items.Add("DeviceId", deviceId);
+                Context.Items.Add("ConnectedAt", connectedAt);
             }
             await base.OnConnectedAsync();
         }
@@ -53,7 +55,8 @@ namespace TrackService
 
             var rawInstitution = Context.Items["InstitutionId"].ToString();
 
-            if(string.IsNullOrEmpty(rawInstitution) == true) {
+            if (string.IsNullOrEmpty(rawInstitution) == true)
+            {
                 return;
             }
 
@@ -61,13 +64,14 @@ namespace TrackService
 
             string vehicleId = Context.Items["VehicleId"].ToString();
             string deviceId = Context.Items["DeviceId"].ToString();
+            string connectedAt = Context.Items["ConnectedAt"].ToString();
 
-            await Clients.Groups(instituitonId, "super").SendAsync("FeedsReceiver", FeedFormat(location, vehicleId: vehicleId, instituitonId: rawInstitution, deviceId: deviceId));
+            await Clients.Groups(instituitonId, "super").SendAsync("FeedsReceiver", FeedFormat(location, vehicleId: vehicleId, instituitonId: rawInstitution, deviceId: deviceId, connectedAt: connectedAt));
         }
 
-        private string FeedFormat(Location location, string vehicleId, string instituitonId, string deviceId)
+        private string FeedFormat(Location location, string vehicleId, string instituitonId, string deviceId, string connectedAt)
         {
-            return  "{\"vehicleId\": \"" + vehicleId + "\",\"institutionId\": \"" + instituitonId + "\",\"deviceId\": \"" + deviceId + "\",\"coordinates\": {\"latitude\": \"" + location.Latitude + "\", \"longitude\": \"" + location.Longitude + "\",\"timestamp\": \"" + location.Timestamp + "\"}}";
+            return "{\"vehicleId\": \"" + vehicleId + "\",\"institutionId\": \"" + instituitonId + "\",\"deviceId\": \"" + deviceId + "\",\"connectedAt\": \"" + connectedAt + "\",\"coordinates\": {\"latitude\": \"" + location.Latitude + "\", \"longitude\": \"" + location.Longitude + "\",\"timestamp\": \"" + location.Timestamp + "\"}}";
             // return new FeedsDto {
             //     InstitutionId = instituitonId,
             //     VehicleId = vehicleId,
@@ -79,7 +83,7 @@ namespace TrackService
         }
 
 
-        public async Task PublishAndSave(List<Location> locations) 
+        public async Task PublishAndSave(List<Location> locations)
         {
             await PublishFeeds(locations.First());
             // SaveFeeds(locations);
@@ -87,7 +91,7 @@ namespace TrackService
 
         public async void SendLocations(List<Location> locations)
         {
-           await PublishAndSave(locations: locations);
+            await PublishAndSave(locations: locations);
         }
 
         public async void SendLocation(string locations)
@@ -98,14 +102,14 @@ namespace TrackService
 
 
         //Receiver Subscribe
-        public void Subscribe(string institutionId, string vehicleId, string deviceId)
+        public void Subscribe(string institutionId, string vehicleId, string deviceId, string connectedAt)
         {
             try
             {
                 if (string.IsNullOrEmpty(institutionId))
                     SubscribeToAll();
                 else
-                   SubscribeToInstitution(institutionId);
+                    SubscribeToInstitution(institutionId);
             }
             catch (Exception ex)
             {
@@ -113,12 +117,14 @@ namespace TrackService
             }
         }
 
-        private async void SubscribeToAll() {
+        private async void SubscribeToAll()
+        {
             if (IsSuperPriviliged(GetUserClaims()))
                 await SubscribeToGroup("super");
         }
 
-        private async void SubscribeToInstitution(string institutionId) {
+        private async void SubscribeToInstitution(string institutionId)
+        {
             if (string.IsNullOrEmpty(institutionId))
                 return;
 
@@ -140,7 +146,7 @@ namespace TrackService
         //Receiver Unsubscribe
         public async void Unsubscribe()
         {
-            
+
             try
             {
                 var claimData = GetUserClaims();
@@ -153,20 +159,21 @@ namespace TrackService
                     string instituitonId = Context.Items["InstitutionId"].ToString();
                     await Groups.RemoveFromGroupAsync(Context.ConnectionId, claimData.TokenInstitutionId);
                 }
-                    
+
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 await Clients.Client(Context.ConnectionId).SendAsync("CommonMessage", ex.Message);
                 return;
             }
-            
+
         }
 
         //Return User Cliams
         private UserClaimsData GetUserClaims()
         {
-            return Context.User.Claims.Where(i => i.Type.ToLower() == "rol").Select(claim => {
+            return Context.User.Claims.Where(i => i.Type.ToLower() == "rol").Select(claim =>
+            {
                 var value = System.Text.Encoding.GetEncoding("iso-8859-1").GetString(Convert.FromBase64String(claim.Value));
 
                 var rolesItem = value.Replace("[", "").Replace("]", "").Replace("\"", "").Replace("{", "").Replace("}", "");
@@ -174,7 +181,8 @@ namespace TrackService
                 var application = mainSplit[0].Split(':');
                 var privilige = mainSplit[1].Split(':');
 
-                return new UserClaimsData() {
+                return new UserClaimsData()
+                {
                     Application = application.LastOrDefault(),
                     Privilege = privilige.LastOrDefault()
                 };
