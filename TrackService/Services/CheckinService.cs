@@ -29,7 +29,7 @@ namespace TrackService.Services
 
         public async Task<CheckinReadDto> PostCheckin(CheckinCreateDto checkinCreateDto)
         {
-            var uri = "";
+            var uri = "https://stage.api.routesme.com/v1.0/checkins";
             var json = JsonConvert.SerializeObject(checkinCreateDto);
             var stringContent = new StringContent(json, System.Text.UnicodeEncoding.UTF8, System.Net.Mime.MediaTypeNames.Application.Json);
             var responseString = await _httpClient.PostAsync(uri, stringContent);
