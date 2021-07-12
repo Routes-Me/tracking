@@ -48,8 +48,8 @@ namespace TrackService
 
         public override async Task OnDisconnectedAsync(Exception ex)
         {
-            if (IsVehicleContext)
-                await PostCheckinAsync(Context.Items["VehicleId"].ToString(), Context.Items["InstitutionId"].ToString(), OperationKind.Disconnected);
+            if (IsVehicleContext)await PostCheckinAsync(Context.Items["VehicleId"].ToString(), Context.Items["InstitutionId"].ToString(), OperationKind.Disconnected);
+                
 
             await base.OnDisconnectedAsync(ex);
         }

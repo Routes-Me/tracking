@@ -1,4 +1,5 @@
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using TrackService.Dtos;
@@ -32,6 +33,7 @@ namespace TrackService.Services
             var uri = "https://stage.api.routesme.com/v1.0/checkins";
             var json = JsonConvert.SerializeObject(checkinCreateDto);
             var stringContent = new StringContent(json, System.Text.UnicodeEncoding.UTF8, System.Net.Mime.MediaTypeNames.Application.Json);
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "Your Oauth token");
             var responseString = await _httpClient.PostAsync(uri, stringContent);
             // return JsonConvert.DeserializeObject<CheckinReadDto>(responseString);
             return new CheckinReadDto();
