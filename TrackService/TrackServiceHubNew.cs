@@ -2,34 +2,36 @@
 using Microsoft.AspNetCore.SignalR;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
 using TrackService.Models;
-using TrackService.Abstraction;
 using TrackService.RethinkDb_Abstractions;
-using TrackService.RethinkDb_Changefeed.Model.Common;
-using Microsoft.Extensions.Options;
 using RoutesSecurity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using TrackService.Dtos;
+using TrackService.Services;
 
 namespace TrackService
 {
 
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    // [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public class TrackServiceHubNew : Hub
     {
-        // private readonly ILocationFeedsRepository  _locationsFeedsRepo;
-        public TrackServiceHubNew() // ILocationFeedsRepository  locationsFeedsRepo,
+        private readonly ICheckinService _service;
+
+        public TrackServiceHubNew(ICheckinService service)
         {
-            // _locationsFeedsRepo = locationsFeedsRepo;
-          
+            _service = service;
         }
 
-        //Sender Connection established
+        private bool IsVehicleContext
+        {
+            get { return Context.Items.ContainsKey("VehicleId"); }
+        }
+
         public override async Task OnConnectedAsync()
         {
-            if(Context.GetHttpContext().Request.Query.Keys.Count > 1)
+            if (Context.GetHttpContext().Request.Query.Keys.Count > 1)
             {
                 string institutionId = Context.GetHttpContext().Request.Query["institutionId"].ToString();
                 string vehicleId = Context.GetHttpContext().Request.Query["vehicleId"].ToString();
@@ -38,13 +40,17 @@ namespace TrackService
                 Context.Items.Add("InstitutionId", institutionId);
                 Context.Items.Add("VehicleId", vehicleId);
                 Context.Items.Add("DeviceId", deviceId);
+
+                await PostCheckinAsync(vehicleId, institutionId, OperationKind.Connected);
             }
             await base.OnConnectedAsync();
         }
 
-        //Sender Disconnection
         public override async Task OnDisconnectedAsync(Exception ex)
         {
+            if (IsVehicleContext)
+                await PostCheckinAsync(Context.Items["VehicleId"].ToString(), Context.Items["InstitutionId"].ToString(), OperationKind.Disconnected);
+
             await base.OnDisconnectedAsync(ex);
         }
 
@@ -53,7 +59,8 @@ namespace TrackService
 
             var rawInstitution = Context.Items["InstitutionId"].ToString();
 
-            if(string.IsNullOrEmpty(rawInstitution) == true) {
+            if (string.IsNullOrEmpty(rawInstitution) == true)
+            {
                 return;
             }
 
@@ -67,19 +74,11 @@ namespace TrackService
 
         private string FeedFormat(Location location, string vehicleId, string instituitonId, string deviceId)
         {
-            return  "{\"vehicleId\": \"" + vehicleId + "\",\"institutionId\": \"" + instituitonId + "\",\"deviceId\": \"" + deviceId + "\",\"coordinates\": {\"latitude\": \"" + location.Latitude + "\", \"longitude\": \"" + location.Longitude + "\",\"timestamp\": \"" + location.Timestamp + "\"}}";
-            // return new FeedsDto {
-            //     InstitutionId = instituitonId,
-            //     VehicleId = vehicleId,
-            //     DeviceId = deviceId,
-            //     Longitude = location.Longitude,
-            //     Latitude = location.Latitude,
-            //     Timestamp = location.Timestamp
-            // };
+            return "{\"vehicleId\": \"" + vehicleId + "\",\"institutionId\": \"" + instituitonId + "\",\"deviceId\": \"" + deviceId + "\",\"coordinates\": {\"latitude\": \"" + location.Latitude + "\", \"longitude\": \"" + location.Longitude + "\",\"timestamp\": \"" + location.Timestamp + "\"}}";
         }
 
 
-        public async Task PublishAndSave(List<Location> locations) 
+        public async Task PublishAndSave(List<Location> locations)
         {
             await PublishFeeds(locations.First());
             // SaveFeeds(locations);
@@ -87,7 +86,7 @@ namespace TrackService
 
         public async void SendLocations(List<Location> locations)
         {
-           await PublishAndSave(locations: locations);
+            await PublishAndSave(locations: locations);
         }
 
         public async void SendLocation(string locations)
@@ -105,7 +104,7 @@ namespace TrackService
                 if (string.IsNullOrEmpty(institutionId))
                     SubscribeToAll();
                 else
-                   SubscribeToInstitution(institutionId);
+                    SubscribeToInstitution(institutionId);
             }
             catch (Exception ex)
             {
@@ -113,12 +112,14 @@ namespace TrackService
             }
         }
 
-        private async void SubscribeToAll() {
+        private async void SubscribeToAll()
+        {
             if (IsSuperPriviliged(GetUserClaims()))
                 await SubscribeToGroup("super");
         }
 
-        private async void SubscribeToInstitution(string institutionId) {
+        private async void SubscribeToInstitution(string institutionId)
+        {
             if (string.IsNullOrEmpty(institutionId))
                 return;
 
@@ -140,7 +141,7 @@ namespace TrackService
         //Receiver Unsubscribe
         public async void Unsubscribe()
         {
-            
+
             try
             {
                 var claimData = GetUserClaims();
@@ -153,20 +154,21 @@ namespace TrackService
                     string instituitonId = Context.Items["InstitutionId"].ToString();
                     await Groups.RemoveFromGroupAsync(Context.ConnectionId, claimData.TokenInstitutionId);
                 }
-                    
+
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 await Clients.Client(Context.ConnectionId).SendAsync("CommonMessage", ex.Message);
                 return;
             }
-            
+
         }
 
         //Return User Cliams
         private UserClaimsData GetUserClaims()
         {
-            return Context.User.Claims.Where(i => i.Type.ToLower() == "rol").Select(claim => {
+            return Context.User.Claims.Where(i => i.Type.ToLower() == "rol").Select(claim =>
+            {
                 var value = System.Text.Encoding.GetEncoding("iso-8859-1").GetString(Convert.FromBase64String(claim.Value));
 
                 var rolesItem = value.Replace("[", "").Replace("]", "").Replace("\"", "").Replace("{", "").Replace("}", "");
@@ -174,7 +176,8 @@ namespace TrackService
                 var application = mainSplit[0].Split(':');
                 var privilige = mainSplit[1].Split(':');
 
-                return new UserClaimsData() {
+                return new UserClaimsData()
+                {
                     Application = application.LastOrDefault(),
                     Privilege = privilige.LastOrDefault()
                 };
@@ -191,6 +194,17 @@ namespace TrackService
                 Locations = locations
             };
             // _locationsFeedsRepo.InsertLocationFeeds(vehicleData);
+        }
+
+        private async Task PostCheckinAsync(string vehicleId, string institutionId, OperationKind kind)
+        {
+            await _service.PostCheckin(new CheckinCreateDto()
+            {
+                VehicleId = vehicleId,
+                InstitutionId = institutionId,
+                Kind = kind.ToString().ToLower(),
+                CheckedAt = DateTime.UtcNow.Ticks
+            });
         }
     }
 }
