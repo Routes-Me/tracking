@@ -203,7 +203,7 @@ namespace TrackService
                 VehicleId = vehicleId,
                 InstitutionId = institutionId,
                 Kind = kind.ToString().ToLower(),
-                CheckedAt = DateTime.UtcNow.Ticks
+                CheckedAt = (int)System.DateTime.UtcNow.Subtract(new System.DateTime(1970, 1, 1)).TotalSeconds
             });
         }
     }
