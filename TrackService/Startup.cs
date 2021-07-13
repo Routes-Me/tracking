@@ -23,6 +23,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Http;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Security.Claims;
 
 namespace TrackService
 {
@@ -37,7 +38,28 @@ namespace TrackService
 
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddHttpClient<ICheckinService, CheckinService>( client =>
+            {
+                // client.BaseAddress = new Uri(Configuration.GetSection("AppSettings").GetValue<String>("Host")); // Configuration["BaseUrl"]
+            });
+
+            // services.AddScoped<IUserInfo>(provider =>
+            // {
+            //     var context = provider.GetService<IHttpContextAccessor>();
+
+            //     return new UserInfo
+            //     {
+            //         SecurityToken = context.HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier)
+            //     };
+            // });
+
+            //     client =>
+            // {
+            //     client.BaseAddress = new Uri("https://stage.api.routesme.com/v1.0/checkins"); // Configuration["BaseUrl"]
+            // });
             services.AddControllers();
+            
+
             // #region RethinkDB
             // Console.WriteLine(Configuration.GetSection("Rethinkdb").GetValue<String>("Host"));
             // services.AddRethinkDb(options =>
@@ -51,7 +73,7 @@ namespace TrackService
             // services.AddSingleton<IRethinkDbStore, RethinkDbStore>();
             // services.AddSingleton<IDataAccessRepository, DataAccessRepository>();
             // services.AddSingleton<ILocationFeedsRepository, LocationFeedsRepository>();
-            
+
             // services.AddHostedService<QueuedHostedService>();
             // services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
 
@@ -60,7 +82,7 @@ namespace TrackService
                 c.AddPolicy("AllowOrigin", options => options.AllowAnyOrigin());
             });
 
-           
+
 
             var dependenciessSection = Configuration.GetSection("Dependencies");
             services.Configure<Dependencies>(dependenciessSection);
@@ -74,16 +96,16 @@ namespace TrackService
 
             // services.Configure<RethinkDbOptions>(Configuration.GetSection("Rethinkdb"));
 
-                        #region AppSettings
-                var appSettingsSection = Configuration.GetSection("AppSettings");
-                services.Configure<AppSettings>(appSettingsSection);
-                var appSettings = appSettingsSection.Get<AppSettings>();
+            #region AppSettings
+            var appSettingsSection = Configuration.GetSection("AppSettings");
+            services.Configure<AppSettings>(appSettingsSection);
+            var appSettings = appSettingsSection.Get<AppSettings>();
 
             #endregion
 
 
             #region JWT
-            
+
             JwtBearerEvents jwtBearerEvents = new JwtBearerEvents
             {
                 OnAuthenticationFailed = context =>
@@ -105,9 +127,6 @@ namespace TrackService
                 OnMessageReceived = context =>
                     {
                         string accessToken = context.Request.Query["access_token"];
-                        Console.WriteLine("########################################");
-                        Console.WriteLine(accessToken);
-                        Console.WriteLine("########################################");
                         // If the request is for our hub...
                         var path = context.HttpContext.Request.Path;
                         if (!string.IsNullOrEmpty(accessToken) &&
@@ -117,13 +136,22 @@ namespace TrackService
                             context.Token = accessToken;
                         }
                         return Task.CompletedTask;
+                    },
+                    OnTokenValidated = async context => 
+                    {
+                     
+                     context.SecurityToken.ToString();
+                        // services.Configure<UserInfo>(options =>
+                        // {
+                        //     options.SecurityToken = context.SecurityToken.ToString();
+                        // });
                     }
-                // OnChallenge = context =>
-                // {
-                //     var logger = context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger(nameof(JwtBearerEvents));
-                //     logger.LogError("OnChallenge error", context.Error, context.ErrorDescription);
-                //     return Task.CompletedTask;
-                // },
+                    // OnChallenge = context =>
+                    // {
+                    //     var logger = context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger(nameof(JwtBearerEvents));
+                    //     logger.LogError("OnChallenge error", context.Error, context.ErrorDescription);
+                    //     return Task.CompletedTask;
+                    // },
             };
 
             services.AddAuthentication(options =>
