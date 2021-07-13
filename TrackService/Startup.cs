@@ -23,6 +23,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Http;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Security.Claims;
 
 namespace TrackService
 {
@@ -37,8 +38,21 @@ namespace TrackService
 
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddHttpClient<ICheckinService, CheckinService>();
-                
+            services.AddHttpClient<ICheckinService, CheckinService>( client =>
+            {
+                // client.BaseAddress = new Uri(Configuration.GetSection("AppSettings").GetValue<String>("Host")); // Configuration["BaseUrl"]
+            });
+
+            // services.AddScoped<IUserInfo>(provider =>
+            // {
+            //     var context = provider.GetService<IHttpContextAccessor>();
+
+            //     return new UserInfo
+            //     {
+            //         SecurityToken = context.HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier)
+            //     };
+            // });
+
             //     client =>
             // {
             //     client.BaseAddress = new Uri("https://stage.api.routesme.com/v1.0/checkins"); // Configuration["BaseUrl"]
@@ -113,9 +127,6 @@ namespace TrackService
                 OnMessageReceived = context =>
                     {
                         string accessToken = context.Request.Query["access_token"];
-                        Console.WriteLine("########################################");
-                        Console.WriteLine(accessToken);
-                        Console.WriteLine("########################################");
                         // If the request is for our hub...
                         var path = context.HttpContext.Request.Path;
                         if (!string.IsNullOrEmpty(accessToken) &&
@@ -125,6 +136,15 @@ namespace TrackService
                             context.Token = accessToken;
                         }
                         return Task.CompletedTask;
+                    },
+                    OnTokenValidated = async context => 
+                    {
+                     
+                     context.SecurityToken.ToString();
+                        // services.Configure<UserInfo>(options =>
+                        // {
+                        //     options.SecurityToken = context.SecurityToken.ToString();
+                        // });
                     }
                     // OnChallenge = context =>
                     // {

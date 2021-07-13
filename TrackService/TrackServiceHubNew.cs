@@ -14,7 +14,7 @@ using TrackService.Services;
 namespace TrackService
 {
 
-    // [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public class TrackServiceHubNew : Hub
     {
         private readonly ICheckinService _service;

@@ -9,11 +9,14 @@ namespace TrackService.Services
     public class CheckinService : ICheckinService
     {
         private readonly HttpClient _httpClient;
-        // private readonly string _remoteServiceBaseUrl;
+        // private readonly UserInfo _userInfo;
+
+        private readonly string _remoteServiceBaseUrl;
 
         public CheckinService(HttpClient httpClient)
         {
             _httpClient = httpClient;
+            _remoteServiceBaseUrl = "";
         }
 
         // public async Task<Catalog> GetCatalogItems(int page, int take,
@@ -30,10 +33,11 @@ namespace TrackService.Services
 
         public async Task<CheckinReadDto> PostCheckin(CheckinCreateDto checkinCreateDto)
         {
-            var uri = "https://stage.api.routesme.com/v1.0/checkins";
+            var uri = "http://vmtprojectstage.uaenorth.cloudapp.azure.com:108/v1.0/checkins";
+            // var uri = API.Checkin.PostCheckin(_remoteServiceBaseUrl);
             var json = JsonConvert.SerializeObject(checkinCreateDto);
             var stringContent = new StringContent(json, System.Text.UnicodeEncoding.UTF8, System.Net.Mime.MediaTypeNames.Application.Json);
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "Your Oauth token");
+            // _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "");
             var responseString = await _httpClient.PostAsync(uri, stringContent);
             // return JsonConvert.DeserializeObject<CheckinReadDto>(responseString);
             return new CheckinReadDto();
