@@ -200,6 +200,7 @@ namespace TrackService
         {
             await _service.PostCheckin(new CheckinCreateDto()
             {
+                ConnectionId = Context.ConnectionId,
                 VehicleId = vehicleId,
                 InstitutionId = institutionId,
                 Kind = kind.ToString().ToLower(),
