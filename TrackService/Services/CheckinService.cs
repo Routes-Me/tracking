@@ -1,5 +1,4 @@
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using TrackService.Dtos;
@@ -19,21 +18,9 @@ namespace TrackService.Services
             _remoteServiceBaseUrl = "";
         }
 
-        // public async Task<Catalog> GetCatalogItems(int page, int take,
-        //                                            int? brand, int? type)
-        // {
-        //     var uri = API.Catalog.GetAllCatalogItems(_remoteServiceBaseUrl,
-        //                                              page, take, brand, type);
-
-        //     var responseString = await _httpClient.GetStringAsync(uri);
-
-        //     var catalog = JsonConvert.DeserializeObject<Catalog>(responseString);
-        //     return catalog;
-        // }
-
         public async Task<CheckinReadDto> PostCheckin(CheckinCreateDto checkinCreateDto)
         {
-            // var uri = "http://vmtprojectstage.uaenorth.cloudapp.azure.com:108/v1.0/checkins";
+      
             var uri = API.Checkin.PostCheckin(_remoteServiceBaseUrl);
             var json = JsonConvert.SerializeObject(checkinCreateDto);
             var stringContent = new StringContent(json, System.Text.UnicodeEncoding.UTF8, System.Net.Mime.MediaTypeNames.Application.Json);
