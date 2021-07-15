@@ -40,7 +40,8 @@ namespace TrackService
         {
             services.AddHttpClient<ICheckinService, CheckinService>( client =>
             {
-                // client.BaseAddress = new Uri(Configuration.GetSection("AppSettings").GetValue<String>("Host")); // Configuration["BaseUrl"]
+                                    // client.BaseAddress = // new Uri(Configuration.GetSection("AppSettings").GetValue<String>("Host")); // Configuration["BaseUrl"]
+                client.BaseAddress = new UriBuilder("http", Configuration.GetSection("AppSettings").GetValue<String>("Base"), Configuration.GetSection("CheckInService").GetValue<int>("Port")).Uri;
             });
 
             // services.AddScoped<IUserInfo>(provider =>

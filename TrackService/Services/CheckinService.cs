@@ -33,8 +33,8 @@ namespace TrackService.Services
 
         public async Task<CheckinReadDto> PostCheckin(CheckinCreateDto checkinCreateDto)
         {
-            var uri = "http://vmtproject.uaenorth.cloudapp.azure.com:108/v1.0/checkins";
-            // var uri = API.Checkin.PostCheckin(_remoteServiceBaseUrl);
+            // var uri = "http://vmtprojectstage.uaenorth.cloudapp.azure.com:108/v1.0/checkins";
+            var uri = API.Checkin.PostCheckin(_remoteServiceBaseUrl);
             var json = JsonConvert.SerializeObject(checkinCreateDto);
             var stringContent = new StringContent(json, System.Text.UnicodeEncoding.UTF8, System.Net.Mime.MediaTypeNames.Application.Json);
             // _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "");
